@@ -13,7 +13,7 @@ type Model struct {
 	Spec *Spec
 }
 
-func NewModelFromYamlFile(ksyPath string) (ret *Model, err error) {
+func ParseToModelFromYamlFile(ksyPath string) (ret *Model, err error) {
 	var data []byte
 	if data, err = ioutil.ReadFile(ksyPath); err != nil {
 		return

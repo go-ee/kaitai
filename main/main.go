@@ -10,7 +10,7 @@ import (
 func main() {
 	flag.Parse()
 	path := flag.Args()[0]
-	model, err := kaitai.NewModelFromYamlFile(path)
+	model, err := kaitai.ParseToModelFromYamlFile(path)
 	if err != nil {
 		panic(err)
 	}
