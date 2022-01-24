@@ -31,7 +31,7 @@ func (o *Model) Info() string {
 }
 
 func (o *Model) ResolveReferences() {
-	o.Root = &Type{Seq: o.Spec.Seq, Doc: o.Spec.Doc}
+	o.Root = &Type{Id: o.Spec.Meta.Id, Seq: o.Spec.Seq, Doc: o.Spec.Doc}
 	o.Spec.resolveReferences()
 }
 
@@ -45,28 +45,35 @@ type Spec struct {
 }
 
 func (o *Spec) resolveReferences() {
-	for _, attr := range o.Seq {
-		attr.resolveReferences(o)
+	for _, item := range o.Seq {
+		item.resolveReferences(o)
 	}
 
-	for _, t := range o.Types {
-		t.resolveReferences(o)
+	for id, item := range o.Types {
+		item.Id = id
+		item.resolveReferences(o)
 	}
 
-	for _, instance := range o.Instances {
-		instance.resolveReferences(o)
+	for id, item := range o.Enums {
+		item.Id = id
+	}
+
+	for id, item := range o.Instances {
+		item.Id = id
+		item.resolveReferences(o)
 	}
 	return
 }
 
 type Type struct {
+	Id  string  `-`
 	Seq []*Attr `yaml:"seq,omitempty"`
 	Doc string  `yaml:"doc,omitempty"`
 }
 
 func (o *Type) resolveReferences(base *Spec) {
-	for _, attr := range o.Seq {
-		attr.resolveReferences(base)
+	for _, item := range o.Seq {
+		item.resolveReferences(base)
 	}
 	return
 }
@@ -97,6 +104,7 @@ type Meta struct {
 }
 
 type Enum struct {
+	Id       string `-`
 	Literals map[int]*Literal
 }
 
@@ -127,6 +135,7 @@ type literal struct {
 }
 
 type Instance struct {
+	Id    string `-`
 	Attrs map[int]*Attr
 }
 
@@ -179,6 +188,7 @@ func (o *Attr) ReferencesResolved() (ret bool) {
 }
 
 type Contents struct {
+	Name   string `-`
 	Values []interface{}
 	Switch *TypeSwitch
 }

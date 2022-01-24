@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/go-ee/kaitai"
 	"log"
 )
@@ -13,6 +14,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	log.Println(model.Root.ReferencesResolved())
+	log.Println(fmt.Sprintf("resolved: %v", model.Root.ReferencesResolved()))
 	log.Println(model.Info())
 }
