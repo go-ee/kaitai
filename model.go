@@ -2,8 +2,11 @@ package kaitai
 
 import (
 	"fmt"
+	"github.com/kaitai-io/kaitai_struct_go_runtime/kaitai"
 	"gopkg.in/yaml.v2"
+	"io"
 	"io/ioutil"
+	"os"
 	"regexp"
 	"strconv"
 )
@@ -22,7 +25,16 @@ func ParseToModelFromYamlFile(ksyPath string) (ret *Model, err error) {
 	if err = yaml.Unmarshal(data, ret.Spec); err != nil {
 		return
 	}
-	ret.ResolveReferences()
+	ret.resolveRefs()
+	return
+}
+
+func (o *Model) Read(filePath string) (ret *Item, err error) {
+	var file *os.File
+	if file, err = os.Open(filePath); err != nil {
+		return
+	}
+	ret, err = o.Root.Read(kaitai.Stream{ReadSeeker: file}, nil, nil)
 	return
 }
 
@@ -30,9 +42,9 @@ func (o *Model) Info() string {
 	return fmt.Sprintf("%v", o.Root)
 }
 
-func (o *Model) ResolveReferences() {
+func (o *Model) resolveRefs() {
 	o.Root = &Type{Id: o.Spec.Meta.Id, Seq: o.Spec.Seq, Doc: o.Spec.Doc}
-	o.Spec.resolveReferences()
+	o.Spec.resolveRefs()
 }
 
 type Spec struct {
@@ -44,14 +56,16 @@ type Spec struct {
 	Instances map[string]*Instance `yaml:"instances,omitempty"`
 }
 
-func (o *Spec) resolveReferences() {
+func (o *Spec) resolveRefs() {
+	o.Meta.resolveRefs()
+
 	for _, item := range o.Seq {
-		item.resolveReferences(o)
+		item.resolveRefs(o)
 	}
 
 	for id, item := range o.Types {
 		item.Id = id
-		item.resolveReferences(o)
+		item.resolveRefs(o)
 	}
 
 	for id, item := range o.Enums {
@@ -60,7 +74,7 @@ func (o *Spec) resolveReferences() {
 
 	for id, item := range o.Instances {
 		item.Id = id
-		item.resolveReferences(o)
+		item.resolveRefs(o)
 	}
 	return
 }
@@ -71,17 +85,39 @@ type Type struct {
 	Doc string  `yaml:"doc,omitempty"`
 }
 
-func (o *Type) resolveReferences(base *Spec) {
-	for _, item := range o.Seq {
-		item.resolveReferences(base)
+func (o *Type) Read(stream kaitai.Stream, parent *Item, root *Item) (ret *Item, err error) {
+	data := map[string]interface{}{}
+	ret = &Item{Type: o, Value: data}
+
+	parent = ret
+	if root == nil {
+		root = ret
+	}
+
+	for _, attr := range o.Seq {
+		var item *Item
+		if item, err = attr.Read(stream, parent, root); err != nil {
+			break
+		}
+		data[attr.Id] = item
+	}
+	if err != nil {
+		ret = nil
 	}
 	return
 }
 
-func (o *Type) ReferencesResolved() (ret bool) {
+func (o *Type) resolveRefs(base *Spec) {
+	for _, item := range o.Seq {
+		item.resolveRefs(base)
+	}
+	return
+}
+
+func (o *Type) RefsResolved() (ret bool) {
 	ret = true
 	for _, c := range o.Seq {
-		ret = c.ReferencesResolved()
+		ret = c.RefsResolved()
 		if !ret {
 			break
 		}
@@ -101,6 +137,11 @@ type Meta struct {
 	KsOpaqueTypes string `yaml:"ksopaquetypes,omitempty"`
 	Licence       string `yaml:"licence,omitempty"`
 	FileExtension string `yaml:"fileextension,omitempty"`
+	EndianBe      *bool  `-`
+}
+
+func (o *Meta) resolveRefs() {
+	o.EndianBe = parseEndian(o.Endian)
 }
 
 type Enum struct {
@@ -139,9 +180,9 @@ type Instance struct {
 	Attrs map[int]*Attr
 }
 
-func (o *Instance) resolveReferences(base *Spec) {
+func (o *Instance) resolveRefs(base *Spec) {
 	for _, attr := range o.Attrs {
-		attr.resolveReferences(base)
+		attr.resolveRefs(base)
 	}
 	return
 }
@@ -175,15 +216,46 @@ type Attr struct {
 	Encoding    string    `yaml:"encoding,omitempty"`
 }
 
-func (o *Attr) resolveReferences(base *Spec) {
-	if o.Type != nil {
-		o.Type.resolveReferences(base)
+func (o *Attr) Read(stream kaitai.Stream, parent *Item, root *Item) (ret *Item, err error) {
+	if o.Repeat == "eos" {
+		var items []*Item
+		for i := 0; err == nil; i++ {
+			var item *Item
+			if item, err = o.readSingle(stream, parent, root); err == nil {
+				items = append(items, item)
+			}
+		}
+
+		if io.EOF == err {
+			err = nil
+			ret = &Item{Type: o, Value: items}
+		}
+	} else {
+		ret, err = o.readSingle(stream, parent, root)
 	}
 	return
 }
 
-func (o *Attr) ReferencesResolved() (ret bool) {
-	ret = o.Type == nil || o.Type.ReferencesResolved()
+func (o *Attr) readSingle(stream kaitai.Stream, parent *Item, root *Item) (ret *Item, err error) {
+	if o.Type != nil {
+		ret, err = o.Type.Read(stream, o, parent, root)
+	} else if o.Contents != nil {
+		ret, err = o.Contents.Read(stream, parent, root)
+	} else {
+		err = fmt.Errorf("attr(%v) ELSE, not implemented yet", o.Id)
+	}
+	return
+}
+
+func (o *Attr) resolveRefs(base *Spec) {
+	if o.Type != nil {
+		o.Type.resolveRefs(base)
+	}
+	return
+}
+
+func (o *Attr) RefsResolved() (ret bool) {
+	ret = o.Type == nil || o.Type.RefsResolved()
 	return
 }
 
@@ -191,6 +263,20 @@ type Contents struct {
 	Name   string `-`
 	Values []interface{}
 	Switch *TypeSwitch
+}
+
+func (o *Contents) Read(stream kaitai.Stream, parent *Item, root *Item) (ret *Item, err error) {
+	if o.Values != nil {
+		var data []byte
+		if data, err = stream.ReadBytes(len(o.Values)); err == nil {
+			ret = &Item{Type: o, Value: data}
+		}
+	} else if o.Switch != nil {
+		err = fmt.Errorf("contents(%v) read Switch not implemented yet", o.Name)
+	} else {
+		err = fmt.Errorf("contents(%v) read ELSE not implemented yet", o.Name)
+	}
+	return
 }
 
 func (o *Contents) UnmarshalYAML(unmarshal func(interface{}) error) (err error) {
@@ -221,17 +307,35 @@ type TypeSwitch struct {
 	Cases    map[string]*TypeRef `yaml:"cases,omitempty"`
 }
 
-func (o *TypeSwitch) resolveReferences(base *Spec) {
-	for _, t := range o.Cases {
-		t.resolveReferences(base)
+func (o *TypeSwitch) Read(stream kaitai.Stream, attr *Attr, parent *Item, root *Item) (ret *Item, err error) {
+	var switchOnValue *Item
+	if switchOnValue, err = parent.Expr(o.SwitchOn); err != nil {
+		return
+	}
+
+	if value, ok := switchOnValue.Value.(string); ok {
+		if typeRef := o.Cases[value]; typeRef != nil {
+			ret, err = typeRef.Read(stream, attr, parent, root)
+		} else {
+			err = fmt.Errorf("can't find SwitchOn %v", value)
+		}
+	} else {
+		err = fmt.Errorf("can't find SwitchOn %v", value)
 	}
 	return
 }
 
-func (o *TypeSwitch) ReferencesResolved() (ret bool) {
+func (o *TypeSwitch) resolveRefs(base *Spec) {
+	for _, t := range o.Cases {
+		t.resolveRefs(base)
+	}
+	return
+}
+
+func (o *TypeSwitch) RefsResolved() (ret bool) {
 	ret = true
 	for _, c := range o.Cases {
-		ret = c.ReferencesResolved()
+		ret = c.RefsResolved()
 		if !ret {
 			break
 		}
@@ -245,10 +349,25 @@ type BuildIn struct {
 	EndianBe    *bool
 }
 
+func (o *BuildIn) Read(stream kaitai.Stream, attr *Attr, parent *Item, root *Item) (ret *Item, err error) {
+	if o.BytesLength > 0 {
+		data := make([]byte, o.BytesLength)
+		if _, err = stream.Read(data); err == nil {
+			ret = &Item{Type: o, Value: data}
+		}
+	} else {
+		var data []byte
+		if data, err = ioutil.ReadAll(stream); err == nil {
+			ret = &Item{Type: o, Value: data}
+		}
+	}
+	return
+}
+
 var buildInRegExp *regexp.Regexp
 
 func init() {
-	buildInRegExp = regexp.MustCompile(`(strz|str|b|f|s|u)([1-8])(be|le|)`)
+	buildInRegExp = regexp.MustCompile(`(b|f|s|u)([1-8])(be|le|)`)
 }
 
 type TypeRef struct {
@@ -260,40 +379,69 @@ type TypeRef struct {
 	BuildIn    *BuildIn
 }
 
-func (o *TypeRef) ReferencesResolved() (ret bool) {
-	ret = o.BuildIn != nil || o.Type != nil || o.Enum != nil || o.Instance != nil || o.TypeSwitch.ReferencesResolved()
+func (o *TypeRef) Read(stream kaitai.Stream, attr *Attr, parent *Item, root *Item) (ret *Item, err error) {
+	if o.BuildIn != nil {
+		ret, err = o.BuildIn.Read(stream, attr, parent, root)
+	} else if o.Enum != nil {
+		err = fmt.Errorf("TypeRef(%v) read Enum not implemented yet, %v", o.Name, o.Instance.Id)
+	} else if o.Type != nil {
+		ret, err = o.Type.Read(stream, parent, root)
+	} else if o.TypeSwitch != nil {
+		ret, err = o.TypeSwitch.Read(stream, attr, parent, root)
+	} else if o.Instance != nil {
+		err = fmt.Errorf("TypeRef(%v) read Instance not implemented yet, %v", o.Name, o.Instance.Id)
+	} else {
+		err = fmt.Errorf("TypeRef(%v) not resolved", o.Name)
+	}
 	return
 }
 
-func (o *TypeRef) resolveReferences(base *Spec) {
-	if o.BuildIn == nil {
+func (o *TypeRef) RefsResolved() (ret bool) {
+	ret = o.BuildIn != nil || o.Type != nil || o.Enum != nil || o.Instance != nil || o.TypeSwitch.RefsResolved()
+	return
+}
+
+func (o *TypeRef) resolveRefs(base *Spec) {
+	if o.BuildIn != nil {
+		if o.BuildIn.EndianBe == nil {
+			o.BuildIn.EndianBe = base.Meta.EndianBe
+		}
+	} else if o.TypeSwitch != nil {
+		o.TypeSwitch.resolveRefs(base)
+	} else {
 		if o.Type = base.Types[o.Name]; o.Type == nil {
 			if o.Enum = base.Enums[o.Name]; o.Enum == nil {
 				o.Instance = base.Instances[o.Name]
 			}
 		}
-	} else if o.TypeSwitch != nil {
-		o.TypeSwitch.resolveReferences(base)
 	}
 }
 
 func (o *TypeRef) UnmarshalYAML(unmarshal func(interface{}) error) (err error) {
 	if err = unmarshal(&o.Name); err == nil {
-		parts := buildInRegExp.FindStringSubmatch(o.Name)
-
-		if parts != nil {
-			length, _ := strconv.Atoi(parts[2])
-			var endianBe bool
-			endian := parts[3]
-			if endian == "be" {
-				endianBe = true
-			} else if endian == "be" {
-				endianBe = false
+		if o.Name == "str" || o.Name == "strz" {
+			o.BuildIn = &BuildIn{Type: o.Name}
+		} else {
+			parts := buildInRegExp.FindStringSubmatch(o.Name)
+			if parts != nil {
+				length, _ := strconv.Atoi(parts[2])
+				endian := parts[3]
+				o.BuildIn = &BuildIn{Type: parts[1], BytesLength: length, EndianBe: parseEndian(endian)}
 			}
-			o.BuildIn = &BuildIn{Type: parts[1], BytesLength: length, EndianBe: &endianBe}
 		}
 	} else {
 		err = unmarshal(&o.TypeSwitch)
+	}
+	return
+}
+
+func parseEndian(endian string) (ret *bool) {
+	if endian == "be" {
+		endianBe := true
+		ret = &endianBe
+	} else if endian == "le" {
+		endianBe := false
+		ret = &endianBe
 	}
 	return
 }

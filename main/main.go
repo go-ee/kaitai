@@ -9,11 +9,19 @@ import (
 
 func main() {
 	flag.Parse()
-	path := flag.Args()[0]
-	model, err := kaitai.ParseToModelFromYamlFile(path)
+	ksyPath := flag.Args()[0]
+	model, err := kaitai.ParseToModelFromYamlFile(ksyPath)
 	if err != nil {
 		panic(err)
 	}
-	log.Println(fmt.Sprintf("resolved: %v", model.Root.ReferencesResolved()))
-	log.Println(model.Info())
+	log.Println(fmt.Sprintf("resolved: %v, %v", model.Root.Id, model.Root.RefsResolved()))
+
+	binaryFilePath := flag.Args()[1]
+	item, err := model.Read(binaryFilePath)
+	if err != nil {
+		panic(err)
+	}
+
+	println(item)
+
 }
