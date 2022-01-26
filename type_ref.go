@@ -15,7 +15,7 @@ type TypeRef struct {
 	Native     *Native     `-`
 }
 
-func (o *TypeRef) BuildReader(attr *Attr, spec *Spec) (ret ItemReader, err error) {
+func (o *TypeRef) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error) {
 	if o.Native != nil {
 		ret, err = o.Native.BuildReader(attr, spec)
 	} else if o.TypeSwitch != nil {

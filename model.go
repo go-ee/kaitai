@@ -10,7 +10,7 @@ import (
 type Model struct {
 	Root       *Type
 	Spec       *Spec
-	itemReader ItemReader
+	itemReader AttrReader
 }
 
 func NewModel(ksyPath string) (ret *Model, err error) {
@@ -44,7 +44,7 @@ func (o *Model) Read(filePath string) (ret *Item, err error) {
 	if file, err = os.Open(filePath); err != nil {
 		return
 	}
-	ret, err = o.itemReader.Read(ReaderIO{ReadSeeker: file}, nil, nil)
+	ret, err = o.itemReader.Read(Reader{ReadSeeker: file}, nil, nil)
 	return
 }
 
@@ -60,17 +60,8 @@ type Spec struct {
 func (o *Spec) crossInit() (err error) {
 	o.Meta.crossInit()
 
-	for _, item := range o.Seq {
-		if err = item.crossInit(o); err != nil {
-			return
-		}
-	}
-
 	for id, item := range o.Types {
 		item.Id = id
-		if err = item.crossInit(o); err != nil {
-			return
-		}
 	}
 
 	for id, item := range o.Enums {
@@ -79,9 +70,6 @@ func (o *Spec) crossInit() (err error) {
 
 	for id, item := range o.Instances {
 		item.Id = id
-		if err = item.crossInit(o); err != nil {
-			return
-		}
 	}
 	return
 }

@@ -22,7 +22,7 @@ func ReadS(endianConverter EndianReader, length uint8) (ret ReadFix) {
 }
 
 func ReadS8(endianConverter EndianReader) ReadFix {
-	return func(reader ReaderIO) (ret interface{}, err error) {
+	return func(reader Reader) (ret interface{}, err error) {
 		var data []byte
 		if data, err = reader.ReadBytes(8); err == nil {
 			ret = int64(endianConverter.Uint64(data))
@@ -32,7 +32,7 @@ func ReadS8(endianConverter EndianReader) ReadFix {
 }
 
 func ReadS4(endianConverter EndianReader) ReadFix {
-	return func(reader ReaderIO) (ret interface{}, err error) {
+	return func(reader Reader) (ret interface{}, err error) {
 		var data []byte
 		if data, err = reader.ReadBytes(4); err == nil {
 			ret = int32(endianConverter.Uint32(data))
@@ -42,7 +42,7 @@ func ReadS4(endianConverter EndianReader) ReadFix {
 }
 
 func ReadS2(endianConverter EndianReader) ReadFix {
-	return func(reader ReaderIO) (ret interface{}, err error) {
+	return func(reader Reader) (ret interface{}, err error) {
 		var data []byte
 		if data, err = reader.ReadBytes(2); err == nil {
 			ret = int16(endianConverter.Uint16(data))
@@ -52,7 +52,7 @@ func ReadS2(endianConverter EndianReader) ReadFix {
 }
 
 func ReadS1() ReadFix {
-	return func(reader ReaderIO) (ret interface{}, err error) {
+	return func(reader Reader) (ret interface{}, err error) {
 		var data []byte
 		if data, err = reader.ReadBytes(1); err == nil {
 			ret = int8(data[0])

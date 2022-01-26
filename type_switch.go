@@ -7,8 +7,11 @@ type TypeSwitch struct {
 	Cases    map[string]*TypeRef `yaml:"cases,omitempty"`
 }
 
-func (o *TypeSwitch) BuildReader(attr *Attr, spec *Spec) (ret ItemReader, err error) {
-	typeSwitchReader := &TypeSwitchReader{Attr: attr, Accessor: o, findSwitchValue: o.buildSwitchValueFinder()}
+func (o *TypeSwitch) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error) {
+	typeSwitchReader := &TypeSwitchReader{
+		AttrReaderBase:  &AttrReaderBase{attr, o},
+		findSwitchValue: o.buildSwitchValueFinder(),
+	}
 	if typeSwitchReader.cases, err = o.buildCaseReaders(attr, spec); err != nil {
 		return
 	}
@@ -28,10 +31,10 @@ func (o *TypeSwitch) buildSwitchValueFinder() func(attr *Attr, parent *Item, roo
 	}
 }
 
-func (o *TypeSwitch) buildCaseReaders(attr *Attr, spec *Spec) (ret map[string]ItemReader, err error) {
-	ret = make(map[string]ItemReader, len(o.Cases))
+func (o *TypeSwitch) buildCaseReaders(attr *Attr, spec *Spec) (ret map[string]AttrReader, err error) {
+	ret = make(map[string]AttrReader, len(o.Cases))
 	for _, caseItem := range o.Cases {
-		var caseReader ItemReader
+		var caseReader AttrReader
 		if caseReader, err = caseItem.BuildReader(attr, spec); err != nil {
 			return
 		}
@@ -41,17 +44,16 @@ func (o *TypeSwitch) buildCaseReaders(attr *Attr, spec *Spec) (ret map[string]It
 }
 
 type TypeSwitchReader struct {
-	Attr     *Attr
-	Accessor *TypeSwitch
+	*AttrReaderBase
 
 	findSwitchValue func(attr *Attr, parent *Item, root *Item) (string, error)
-	cases           map[string]ItemReader
-	defaultCase     ItemReader
+	cases           map[string]AttrReader
+	defaultCase     AttrReader
 }
 
-func (o *TypeSwitchReader) Read(reader ReaderIO, parent *Item, root *Item) (ret *Item, err error) {
+func (o *TypeSwitchReader) Read(reader Reader, parent *Item, root *Item) (ret *Item, err error) {
 	var switchValue string
-	if switchValue, err = o.findSwitchValue(o.Attr, parent, root); err != nil {
+	if switchValue, err = o.findSwitchValue(o.attr, parent, root); err != nil {
 		return
 	}
 
@@ -63,7 +65,7 @@ func (o *TypeSwitchReader) Read(reader ReaderIO, parent *Item, root *Item) (ret 
 	if itemReader != nil {
 		ret, err = itemReader.Read(reader, parent, root)
 	} else {
-		err = fmt.Errorf("no case found for %v, %v", o.Attr.Id, switchValue)
+		err = fmt.Errorf("no case found for %v, %v", o.attr.Id, switchValue)
 	}
 	return
 }

@@ -27,42 +27,35 @@ type Attr struct {
 	EosError    string    `yaml:"eos-error,omitempty"`
 	PadRight    string    `yaml:"pad-right,omitempty"`
 	Encoding    string    `yaml:"encoding,omitempty"`
-
-	itemReader ItemReader `-`
 }
 
-func (o *Attr) BuildReader(spec *Spec) (ret ItemReader, err error) {
-	if err = o.crossInit(spec); err != nil {
-		return
+func (o *Attr) BuildReader(spec *Spec) (ret AttrReader, err error) {
+	var itemReader AttrReader
+
+	if o.Type != nil {
+		itemReader, err = o.Type.BuildReader(o, spec)
+	} else if o.Contents != nil {
+		itemReader, err = o.Contents.BuildReader(o, spec)
+	} else if o.SizeEos == "true" {
+		itemReader = &NativeReaderFix{&AttrReaderBase{attr: o}, ReadFixFull(ToSame)}
+	} else {
+		err = fmt.Errorf("read attr: ELSE, not implemented yet")
 	}
 
 	if o.Repeat == "eos" {
-		ret = &AttrCycleReader{Attr: o, itemReader: o.itemReader}
+		ret = &AttrCycleReader{&AttrReaderBase{attr: o}, itemReader}
 	} else {
-		ret = o.itemReader
-	}
-	return
-}
-
-func (o *Attr) crossInit(spec *Spec) (err error) {
-	if o.Type != nil {
-		o.itemReader, err = o.Type.BuildReader(o, spec)
-	} else if o.Contents != nil {
-		o.itemReader, err = o.Contents.BuildReader(o, spec)
-	} else if o.SizeEos == "true" {
-		o.itemReader = &NativeReaderFix{Attr: o, fix: ReadFixFull(ToSame)}
-	} else {
-		err = fmt.Errorf("read Attr: ELSE, not implemented yet")
+		ret = itemReader
 	}
 	return
 }
 
 type AttrCycleReader struct {
-	Attr       *Attr
-	itemReader ItemReader
+	*AttrReaderBase
+	itemReader AttrReader
 }
 
-func (o *AttrCycleReader) Read(reader ReaderIO, parent *Item, root *Item) (ret *Item, err error) {
+func (o *AttrCycleReader) Read(reader Reader, parent *Item, root *Item) (ret *Item, err error) {
 	var items []*Item
 	for i := 0; err == nil; i++ {
 		var item *Item
