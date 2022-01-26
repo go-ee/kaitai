@@ -7,27 +7,29 @@ import (
 
 type Contents struct {
 	Name          string `-`
-	ContentString *string
+	ContentString string
 	ContentArray  []byte
 	TypeSwitch    *TypeSwitch
 }
 
 func (o *Contents) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error) {
-	if o.ContentString != nil {
+	if o.ContentString != "" {
 		ret = &ContentStringReader{
 			AttrReaderBase: &AttrReaderBase{attr, o},
-			value:          *o.ContentString}
+			value:          o.ContentString,
+			validate:       true,
+		}
 	} else if o.ContentArray != nil {
 		ret = &ContentArrayReader{
 			AttrReaderBase: &AttrReaderBase{attr, o},
 			array:          o.ContentArray,
+			validate:       true,
 		}
 	} else if o.TypeSwitch != nil {
 		ret, err = o.TypeSwitch.BuildReader(attr, spec)
 	} else {
 		err = fmt.Errorf("contents(%v) read ELSE not implemented yet", o.Name)
 	}
-
 	return
 }
 

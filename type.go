@@ -7,37 +7,34 @@ type Type struct {
 }
 
 func (o *Type) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error) {
-	var seqReaders []*AttrReaderHolder
-	if seqReaders, err = o.buildSeqReaders(spec); err == nil {
+	var readers []AttrReader
+	if readers, err = o.buildSeqReaders(spec); err == nil {
 		typeReader := &TypeReader{
 			AttrReaderBase: &AttrReaderBase{attr, o},
-			seqReaders:     seqReaders,
+			attrReaders:    readers,
 		}
 		ret = typeReader
 	}
 	return
 }
 
-func (o *Type) buildSeqReaders(spec *Spec) (ret []*AttrReaderHolder, err error) {
-	seqReaders := make([]*AttrReaderHolder, len(o.Seq))
+func (o *Type) buildSeqReaders(spec *Spec) (ret []AttrReader, err error) {
+	readers := make([]AttrReader, len(o.Seq))
 	for i, seqAttr := range o.Seq {
-		if itemReader, currentErr := seqAttr.BuildReader(spec); currentErr == nil {
-			seqReaders[i] = &AttrReaderHolder{Attr: seqAttr, AttrReader: itemReader}
-		} else {
-			err = currentErr
+		if readers[i], err = seqAttr.BuildReader(spec); err != nil {
 			return
 		}
 	}
 
 	if err == nil {
-		ret = seqReaders
+		ret = readers
 	}
 	return
 }
 
 type TypeReader struct {
 	*AttrReaderBase
-	seqReaders []*AttrReaderHolder
+	attrReaders []AttrReader
 }
 
 func (o *TypeReader) Read(reader Reader, parent *Item, root *Item) (ret *Item, err error) {
@@ -49,9 +46,9 @@ func (o *TypeReader) Read(reader Reader, parent *Item, root *Item) (ret *Item, e
 		root = ret
 	}
 
-	for _, attrReader := range o.seqReaders {
-		if item, currentErr := attrReader.AttrReader.Read(reader, parent, root); currentErr == nil {
-			data[attrReader.Attr.Id] = item
+	for _, attrReader := range o.attrReaders {
+		if item, currentErr := attrReader.Read(reader, parent, root); currentErr == nil {
+			data[item.Attr.Id] = item
 		} else {
 			err = currentErr
 			break
@@ -62,9 +59,4 @@ func (o *TypeReader) Read(reader Reader, parent *Item, root *Item) (ret *Item, e
 		ret = nil
 	}
 	return
-}
-
-type AttrReaderHolder struct {
-	Attr       *Attr
-	AttrReader AttrReader
 }

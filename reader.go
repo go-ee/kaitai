@@ -138,7 +138,7 @@ func ReadLength(reader Reader, length uint8, convert Convert) (ret interface{}, 
 func ReadDynamicLengthExpr(expr string, convert Convert) (ret ReadDynamic) {
 	return func(reader Reader, parent *Item, root *Item) (ret interface{}, err error) {
 		var sizeItem *Item
-		if sizeItem, err = parent.Expr(expr); err != nil {
+		if sizeItem, err = parent.Expr(expr); err == nil {
 			if length, ok := sizeItem.Value.(uint8); ok {
 				ret, err = ReadLength(reader, length, convert)
 			} else {
