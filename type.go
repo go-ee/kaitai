@@ -12,22 +12,26 @@ func (o *Type) BuildReader(attr *Attr, spec *Spec) (ret ItemReader, err error) {
 	}
 
 	var seqReaders []*AttrReader
-	if seqReaders, err = o.buildSeqReaders(attr, spec); err == nil {
+	if seqReaders, err = o.buildSeqReaders(spec); err == nil {
 		typeReader := &TypeReader{Attr: attr, Accessor: o, Seq: seqReaders}
 		ret = typeReader
 	}
 	return
 }
 
-func (o *Type) buildSeqReaders(attr *Attr, spec *Spec) (ret []*AttrReader, err error) {
+func (o *Type) buildSeqReaders(spec *Spec) (ret []*AttrReader, err error) {
 	seqReaders := make([]*AttrReader, len(o.Seq))
 	for i, seqAttr := range o.Seq {
-		if readItem, currentErr := seqAttr.BuildReader(attr, spec); currentErr == nil {
-			seqReaders[i] = &AttrReader{Attr: seqAttr, ItemReader: readItem}
+		if itemReader, currentErr := seqAttr.BuildReader(spec); currentErr == nil {
+			seqReaders[i] = &AttrReader{Attr: seqAttr, ItemReader: itemReader}
 		} else {
 			err = currentErr
 			return
 		}
+	}
+
+	if err == nil {
+		ret = seqReaders
 	}
 	return
 }

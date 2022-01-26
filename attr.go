@@ -1,6 +1,9 @@
 package kaitai
 
-import "io"
+import (
+	"fmt"
+	"io"
+)
 
 type Attr struct {
 	Id          string    `yaml:"id,omitempty"`
@@ -28,26 +31,15 @@ type Attr struct {
 	itemReader ItemReader `-`
 }
 
-func (o *Attr) BuildReader(attr *Attr, spec *Spec) (ret ItemReader, err error) {
-	return
-}
+func (o *Attr) BuildReader(spec *Spec) (ret ItemReader, err error) {
+	if err = o.crossInit(spec); err != nil {
+		return
+	}
 
-func (o *Attr) Read(reader ReaderIO, parent *Item, root *Item) (ret *Item, err error) {
 	if o.Repeat == "eos" {
-		var items []*Item
-		for i := 0; err == nil; i++ {
-			var item *Item
-			if item, err = o.itemReader.Read(reader, parent, root); err == nil {
-				items = append(items, item)
-			}
-		}
-
-		if io.EOF == err {
-			err = nil
-			ret = &Item{Accessor: o, Value: items}
-		}
+		ret = &AttrCycleReader{Attr: o, itemReader: o.itemReader}
 	} else {
-		ret, err = o.itemReader.Read(reader, parent, root)
+		ret = o.itemReader
 	}
 	return
 }
@@ -58,9 +50,30 @@ func (o *Attr) crossInit(spec *Spec) (err error) {
 	} else if o.Contents != nil {
 		o.itemReader, err = o.Contents.BuildReader(o, spec)
 	} else if o.SizeEos == "true" {
-		//o.itemReader = ItemReader
+		o.itemReader = &NativeReaderFix{Attr: o, fix: ReadFixFull(ToSame)}
 	} else {
-		//o.itemReader = &AttrReader{o.Id}
+		err = fmt.Errorf("read Attr: ELSE, not implemented yet")
+	}
+	return
+}
+
+type AttrCycleReader struct {
+	Attr       *Attr
+	itemReader ItemReader
+}
+
+func (o *AttrCycleReader) Read(reader ReaderIO, parent *Item, root *Item) (ret *Item, err error) {
+	var items []*Item
+	for i := 0; err == nil; i++ {
+		var item *Item
+		if item, err = o.itemReader.Read(reader, parent, root); err == nil {
+			items = append(items, item)
+		}
+	}
+
+	if io.EOF == err {
+		err = nil
+		ret = &Item{Accessor: o, Value: items}
 	}
 	return
 }
