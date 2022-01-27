@@ -1,6 +1,6 @@
 package kaitai
 
-func ReadB(endianConverter EndianReader, length uint8) (ret ReadFix) {
+func ReadB(endianConverter EndianReader, length uint8) (ret ReadTo) {
 	switch length {
 	case 1:
 		ret = ReadB1(endianConverter)
@@ -12,32 +12,38 @@ func ReadB(endianConverter EndianReader, length uint8) (ret ReadFix) {
 	return
 }
 
-func ReadB1(endianConverter EndianReader) ReadFix {
-	return func(reader *Reader) (ret interface{}, err error) {
+func ReadB1(endianConverter EndianReader) ReadTo {
+	return func(fillItem *Item, reader *Reader) (err error) {
+		fillItem.SetStartPos(reader)
 		var value uint64
 		if value, err = endianConverter.ReadBitsInt(reader, 1); err == nil {
-			ret = value != 0
+			fillItem.Value = value != 0
 		}
+		fillItem.SetEndPos(reader)
 		return
 	}
 }
 
-func ReadB2(endianConverter EndianReader) ReadFix {
-	return func(reader *Reader) (ret interface{}, err error) {
+func ReadB2(endianConverter EndianReader) ReadTo {
+	return func(fillItem *Item, reader *Reader) (err error) {
+		fillItem.SetStartPos(reader)
 		var value uint64
 		if value, err = endianConverter.ReadBitsInt(reader, 2); err == nil {
-			ret = uint(value)
+			fillItem.Value = uint(value)
 		}
+		fillItem.SetEndPos(reader)
 		return
 	}
 }
 
-func ReadBUint64(endianConverter EndianReader, length uint8) ReadFix {
-	return func(reader *Reader) (ret interface{}, err error) {
+func ReadBUint64(endianConverter EndianReader, length uint8) ReadTo {
+	return func(fillItem *Item, reader *Reader) (err error) {
+		fillItem.SetStartPos(reader)
 		var value uint64
 		if value, err = endianConverter.ReadBitsInt(reader, length); err == nil {
-			ret = value
+			fillItem.Value = value
 		}
+		fillItem.SetEndPos(reader)
 		return
 	}
 }

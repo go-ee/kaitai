@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-func ReadU(endianConverter EndianReader, length uint8) (ret ReadFix) {
+func ReadU(endianConverter EndianReader, length uint8) (ret ReadTo) {
 	switch length {
 	case 1:
 		ret = ReadU1()
@@ -21,42 +21,46 @@ func ReadU(endianConverter EndianReader, length uint8) (ret ReadFix) {
 	return
 }
 
-func ReadU1() ReadFix {
-	return func(reader *Reader) (ret interface{}, err error) {
-		var data []byte
-		if data, err = reader.ReadBytes(1); err == nil {
-			ret = data[0]
+func ReadU1() ReadTo {
+	return func(fillItem *Item, reader *Reader) (err error) {
+		fillItem.SetStartPos(reader)
+		if fillItem.Raw, err = reader.ReadBytes(1); err == nil {
+			fillItem.Value = fillItem.Raw[0]
 		}
+		fillItem.SetEndPos(reader)
 		return
 	}
 }
 
-func ReadU2(endianConverter EndianReader) ReadFix {
-	return func(reader *Reader) (ret interface{}, err error) {
-		var data []byte
-		if data, err = reader.ReadBytes(2); err == nil {
-			ret = endianConverter.Uint16(data)
+func ReadU2(endianConverter EndianReader) ReadTo {
+	return func(fillItem *Item, reader *Reader) (err error) {
+		fillItem.SetStartPos(reader)
+		if fillItem.Raw, err = reader.ReadBytes(2); err == nil {
+			fillItem.Value = endianConverter.Uint16(fillItem.Raw)
 		}
+		fillItem.SetEndPos(reader)
 		return
 	}
 }
 
-func ReadU4(endianConverter EndianReader) ReadFix {
-	return func(reader *Reader) (ret interface{}, err error) {
-		var data []byte
-		if data, err = reader.ReadBytes(4); err == nil {
-			ret = endianConverter.Uint32(data)
+func ReadU4(endianConverter EndianReader) ReadTo {
+	return func(fillItem *Item, reader *Reader) (err error) {
+		fillItem.SetStartPos(reader)
+		if fillItem.Raw, err = reader.ReadBytes(4); err == nil {
+			fillItem.Value = endianConverter.Uint32(fillItem.Raw)
 		}
+		fillItem.SetEndPos(reader)
 		return
 	}
 }
 
-func ReadU8(endianConverter EndianReader) ReadFix {
-	return func(reader *Reader) (ret interface{}, err error) {
-		var data []byte
-		if data, err = reader.ReadBytes(8); err == nil {
-			ret = endianConverter.Uint64(data)
+func ReadU8(endianConverter EndianReader) ReadTo {
+	return func(fillItem *Item, reader *Reader) (err error) {
+		fillItem.SetStartPos(reader)
+		if fillItem.Raw, err = reader.ReadBytes(8); err == nil {
+			fillItem.Value = endianConverter.Uint64(fillItem.Raw)
 		}
+		fillItem.SetEndPos(reader)
 		return
 	}
 }

@@ -3,7 +3,6 @@ package kaitai
 import (
 	"encoding/binary"
 	"fmt"
-	"io"
 	"math"
 	"regexp"
 )
@@ -25,74 +24,31 @@ func (o *Native) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error)
 		endianConverter = LittleEndianConverter
 	}
 
-	var fix ReadFix
-	var dynamic ReadDynamic
+	var readTo ReadTo
 
 	switch o.Type {
 	case "str":
-		fix = ReadFixAttr(attr, ToString)
-		dynamic = ReadDynamicAttr(attr, ToString)
+		readTo = ReadAttr(attr, ToString)
 	case "strz":
-		fix = ReadFixAttr(attr, ToString)
-		dynamic = ReadDynamicAttr(attr, ToString)
+		readTo = ReadAttr(attr, ToString)
 	case "b":
-		fix = ReadB(endianConverter, o.Length)
+		readTo = ReadB(endianConverter, o.Length)
 	case "u":
-		fix = ReadU(endianConverter, o.Length)
+		readTo = ReadU(endianConverter, o.Length)
 	case "s":
-		fix = ReadS(endianConverter, o.Length)
+		readTo = ReadS(endianConverter, o.Length)
 	case "f":
-		fix = ReadF(endianConverter, o.Length)
+		readTo = ReadF(endianConverter, o.Length)
 	default:
 		err = fmt.Errorf("not supported Native(%v,%v)", o.Type, o.Length)
 	}
 
-	if fix != nil {
-		ret = &NativeReaderFix{
+	if readTo != nil {
+		ret = &ReadToReader{
 			AttrReaderBase: &AttrReaderBase{attr, o},
-			fix:            fix,
+			readTo:         readTo,
 		}
-	} else if dynamic != nil {
-		ret = &NativeReaderDynamic{
-			AttrReaderBase: &AttrReaderBase{attr, o},
-			dynamic:        dynamic}
 	}
-	return
-}
-
-type NativeReaderFix struct {
-	*AttrReaderBase
-	fix ReadFix
-}
-
-func (o *NativeReaderFix) ReadTo(fillItem *Item, reader *Reader) (err error) {
-	fillItem.SetStartPos(reader)
-
-	if value, currentErr := o.fix(reader); currentErr == nil {
-		fillItem.Value = value
-	} else {
-		err = currentErr
-	}
-
-	fillItem.SetEndPos(reader)
-	return
-}
-
-type NativeReaderDynamic struct {
-	*AttrReaderBase
-	dynamic ReadDynamic
-}
-
-func (o *NativeReaderDynamic) ReadTo(fillItem *Item, reader *Reader) (err error) {
-	fillItem.SetStartPos(reader)
-
-	if value, currentErr := o.dynamic(reader, fillItem.Parent); currentErr == nil {
-		fillItem.Value = value
-	} else {
-		err = currentErr
-	}
-
-	fillItem.SetEndPos(reader)
 	return
 }
 
@@ -145,9 +101,6 @@ func (o *bigEndianConverter) Float64fromBits(data []byte) float64 {
 }
 
 func (o *bigEndianConverter) ReadBitsInt(reader *Reader, n uint8) (ret uint64, err error) {
-
-	start, _ := reader.Seek(0, io.SeekCurrent)
-
 	bitsNeeded := int(n) - int(reader.bitsLeft)
 	if bitsNeeded > 0 {
 		// 1 bit  => 1 byte
@@ -158,9 +111,8 @@ func (o *bigEndianConverter) ReadBitsInt(reader *Reader, n uint8) (ret uint64, e
 			err = fmt.Errorf("ReadBitsInt(%d): more than 8 bytes requested", n)
 			return
 		}
-		_, err = reader.Read(reader.buf[:bytesNeeded])
-		if err != nil {
-			return ret, err
+		if _, err = reader.Read(reader.buf[:bytesNeeded]); err != nil {
+			return
 		}
 		for i := 0; i < bytesNeeded; i++ {
 			reader.bits <<= 8
@@ -178,10 +130,6 @@ func (o *bigEndianConverter) ReadBitsInt(reader *Reader, n uint8) (ret uint64, e
 	reader.bitsLeft -= n
 	mask = (1 << reader.bitsLeft) - 1
 	reader.bits &= mask
-
-	end, _ := reader.Seek(0, io.SeekCurrent)
-	println(start, end)
-
 	return
 }
 
@@ -214,9 +162,6 @@ func (o *littleEndianConverter) Float64fromBits(data []byte) float64 {
 }
 
 func (o *littleEndianConverter) ReadBitsInt(reader *Reader, length uint8) (ret uint64, err error) {
-
-	start, _ := reader.Seek(0, io.SeekCurrent)
-
 	bitsNeeded := int(length) - int(reader.bitsLeft)
 	var bitsLeft = uint64(reader.bitsLeft)
 	if bitsNeeded > 0 {
@@ -245,9 +190,5 @@ func (o *littleEndianConverter) ReadBitsInt(reader *Reader, length uint8) (ret u
 	// remove bottom bits that we've just read by shifting
 	reader.bits >>= length
 	reader.bitsLeft = uint8(bitsLeft) - length
-
-	end, _ := reader.Seek(0, io.SeekCurrent)
-	println(start, end)
-
 	return
 }

@@ -16,8 +16,7 @@ type AttrReader interface {
 	NewItem(parent *Item, value interface{}) *Item
 }
 
-type ReadFix func(reader *Reader) (ret interface{}, err error)
-type ReadDynamic func(reader *Reader, parent *Item) (ret interface{}, err error)
+type ReadTo func(fillItem *Item, reader *Reader) (err error)
 type Convert func(data []byte) (ret interface{}, err error)
 
 type AttrReaderBase struct {
@@ -37,11 +36,21 @@ func (o *AttrReaderBase) NewItem(parent *Item, value interface{}) *Item {
 	return &Item{Attr: o.attr, Accessor: o.accessor, Value: value, Parent: parent}
 }
 
+type ReadToReader struct {
+	*AttrReaderBase
+	readTo ReadTo
+}
+
+func (o *ReadToReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
+	return o.readTo(fillItem, reader)
+}
+
 type Item struct {
 	Value    interface{}
 	Parent   *Item
 	StartPos int64
 	EndPos   int64
+	Raw      []byte
 	Attr     *Attr
 	Accessor interface{}
 }
@@ -95,9 +104,8 @@ func (o *Reader) ReadBytesFull() ([]byte, error) {
 	return ioutil.ReadAll(o)
 }
 
-func (o *Reader) ReadBytesAsReader(n uint16) (ret *Reader, err error) {
+func (o *Reader) ReadBytesAsReader(n uint16) (ret *Reader, raw []byte, err error) {
 	currentPos := o.Position()
-	var raw []byte
 	if raw, err = o.ReadBytes(n); err == nil {
 		ret = &Reader{ReadSeeker: bytes.NewReader(raw), offset: currentPos}
 	}
@@ -109,33 +117,27 @@ func (o *Reader) Position() (ret int64) {
 	return o.offset + ret
 }
 
-func ReadFixAttr(attr *Attr, convert Convert) (ret ReadFix) {
+func ReadAttr(attr *Attr, convert Convert) (ret ReadTo) {
 	if attr.SizeEos == "true" {
 		ret = ReadFixFull(convert)
 	} else if attr.Size != "" {
 		if length, err := strconv.Atoi(attr.Size); err == nil {
 			ret = ReadFixLength(uint16(length), convert)
-		}
-	}
-	return
-}
-
-func ReadDynamicAttr(attr *Attr, convert Convert) (ret ReadDynamic) {
-	if attr.Size != "" {
-		if _, err := strconv.Atoi(attr.Size); err != nil {
+		} else {
 			ret = ReadDynamicLengthExpr(attr.Size, convert)
 		}
 	}
 	return
 }
 
-func ReadFixFull(convert Convert) (ret ReadFix) {
-	return func(reader *Reader) (ret interface{}, err error) {
-		return ReadFull(reader, convert)
+func ReadFixFull(convert Convert) (ret ReadTo) {
+	return func(fillItem *Item, reader *Reader) (err error) {
+		fillItem.Value, fillItem.Raw, err = ReadFull(reader, convert)
+		return
 	}
 }
 
-func ReadFull(reader *Reader, convert Convert) (ret interface{}, err error) {
+func ReadFull(reader *Reader, convert Convert) (ret interface{}, raw []byte, err error) {
 	var data []byte
 	if data, err = reader.ReadBytesFull(); err == nil {
 		ret, err = convert(data)
@@ -143,33 +145,37 @@ func ReadFull(reader *Reader, convert Convert) (ret interface{}, err error) {
 	return
 }
 
-func ReadFixLength(length uint16, convert Convert) (ret ReadFix) {
-	return func(reader *Reader) (ret interface{}, err error) {
-		return ReadLength(reader, length, convert)
+func ReadFixLength(length uint16, convert Convert) (ret ReadTo) {
+	return func(fillItem *Item, reader *Reader) (err error) {
+		fillItem.SetStartPos(reader)
+		fillItem.Value, fillItem.Raw, err = ReadLength(length, reader, convert)
+		fillItem.SetEndPos(reader)
+		return
 	}
 }
 
-func ReadLength(reader *Reader, length uint16, convert Convert) (ret interface{}, err error) {
-	var data []byte
+func ReadLength(length uint16, reader *Reader, convert Convert) (ret interface{}, raw []byte, err error) {
 	if length > 0 {
-		data, err = reader.ReadBytes(length)
+		raw, err = reader.ReadBytes(length)
 	} else {
-		data, err = reader.ReadBytesFull()
+		raw, err = reader.ReadBytesFull()
 	}
 
 	if err == nil {
-		ret, err = convert(data)
+		ret, err = convert(raw)
 	}
 	return
 }
 
-func ReadDynamicLengthExpr(expr string, convert Convert) (ret ReadDynamic) {
-	return func(reader *Reader, parent *Item) (ret interface{}, err error) {
+func ReadDynamicLengthExpr(expr string, convert Convert) (ret ReadTo) {
+	return func(fillItem *Item, reader *Reader) (err error) {
 		var sizeItem *Item
-		if sizeItem, err = parent.Expr(expr); err == nil {
+		if sizeItem, err = fillItem.Parent.Expr(expr); err == nil {
 			var length uint16
 			if length, err = toUint16(sizeItem.Value); err == nil {
-				ret, err = ReadLength(reader, length, convert)
+				fillItem.SetStartPos(reader)
+				fillItem.Value, fillItem.Raw, err = ReadLength(length, reader, convert)
+				fillItem.SetEndPos(reader)
 			} else {
 				err = fmt.Errorf("cant parse Size to uint64, expr=%v, valiue=%v, %v", expr, sizeItem.Value, err)
 			}

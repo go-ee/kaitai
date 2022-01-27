@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-func ReadS(endianConverter EndianReader, length uint8) (ret ReadFix) {
+func ReadS(endianConverter EndianReader, length uint8) (ret ReadTo) {
 	switch length {
 	case 1:
 		ret = ReadS1()
@@ -21,42 +21,46 @@ func ReadS(endianConverter EndianReader, length uint8) (ret ReadFix) {
 	return
 }
 
-func ReadS8(endianConverter EndianReader) ReadFix {
-	return func(reader *Reader) (ret interface{}, err error) {
-		var data []byte
-		if data, err = reader.ReadBytes(8); err == nil {
-			ret = int64(endianConverter.Uint64(data))
+func ReadS8(endianConverter EndianReader) ReadTo {
+	return func(fillItem *Item, reader *Reader) (err error) {
+		fillItem.SetStartPos(reader)
+		if fillItem.Raw, err = reader.ReadBytes(8); err == nil {
+			fillItem.Value = int64(endianConverter.Uint64(fillItem.Raw))
 		}
+		fillItem.SetEndPos(reader)
 		return
 	}
 }
 
-func ReadS4(endianConverter EndianReader) ReadFix {
-	return func(reader *Reader) (ret interface{}, err error) {
-		var data []byte
-		if data, err = reader.ReadBytes(4); err == nil {
-			ret = int32(endianConverter.Uint32(data))
+func ReadS4(endianConverter EndianReader) ReadTo {
+	return func(fillItem *Item, reader *Reader) (err error) {
+		fillItem.SetStartPos(reader)
+		if fillItem.Raw, err = reader.ReadBytes(4); err == nil {
+			fillItem.Value = int32(endianConverter.Uint32(fillItem.Raw))
 		}
+		fillItem.SetEndPos(reader)
 		return
 	}
 }
 
-func ReadS2(endianConverter EndianReader) ReadFix {
-	return func(reader *Reader) (ret interface{}, err error) {
-		var data []byte
-		if data, err = reader.ReadBytes(2); err == nil {
-			ret = int16(endianConverter.Uint16(data))
+func ReadS2(endianConverter EndianReader) ReadTo {
+	return func(fillItem *Item, reader *Reader) (err error) {
+		fillItem.SetStartPos(reader)
+		if fillItem.Raw, err = reader.ReadBytes(2); err == nil {
+			fillItem.Value = int16(endianConverter.Uint16(fillItem.Raw))
 		}
+		fillItem.SetEndPos(reader)
 		return
 	}
 }
 
-func ReadS1() ReadFix {
-	return func(reader *Reader) (ret interface{}, err error) {
-		var data []byte
-		if data, err = reader.ReadBytes(1); err == nil {
-			ret = int8(data[0])
+func ReadS1() ReadTo {
+	return func(fillItem *Item, reader *Reader) (err error) {
+		fillItem.SetStartPos(reader)
+		if fillItem.Raw, err = reader.ReadBytes(1); err == nil {
+			fillItem.Value = int8(fillItem.Raw[0])
 		}
+		fillItem.SetEndPos(reader)
 		return
 	}
 }

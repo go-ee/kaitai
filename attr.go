@@ -37,7 +37,7 @@ func (o *Attr) BuildReader(spec *Spec) (ret AttrReader, err error) {
 	} else if o.Contents != nil {
 		itemReader, err = o.Contents.BuildReader(o, spec)
 	} else if o.SizeEos == "true" {
-		itemReader = &NativeReaderFix{&AttrReaderBase{attr: o}, ReadFixFull(ToSame)}
+		itemReader = &ReadToReader{&AttrReaderBase{attr: o}, ReadFixFull(ToSame)}
 	} else {
 		err = fmt.Errorf("read attr: ELSE, not implemented yet")
 	}
@@ -98,7 +98,7 @@ func (o *AttrSizeReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
 	}
 
 	var sizeReader *Reader
-	if sizeReader, err = reader.ReadBytesAsReader(length); err != nil {
+	if sizeReader, fillItem.Raw, err = reader.ReadBytesAsReader(length); err != nil {
 		return
 	}
 
