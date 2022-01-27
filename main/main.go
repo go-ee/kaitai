@@ -14,6 +14,7 @@ const (
 )
 
 func main() {
+	start := time.Now()
 	flag.Parse()
 	ksyPath := flag.Args()[0]
 
@@ -22,7 +23,6 @@ func main() {
 		panic(err)
 	}
 
-	start := time.Now()
 	binaryFilePath := flag.Args()[1]
 	item, err := model.Read(binaryFilePath)
 	if err != nil {

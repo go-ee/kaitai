@@ -1,8 +1,7 @@
 package kaitai
 
 import (
-	"fmt"
-	"log"
+	"github.com/sirupsen/logrus"
 )
 
 func ReadS(endianConverter EndianReader, length uint8) (ret ReadTo) {
@@ -16,7 +15,7 @@ func ReadS(endianConverter EndianReader, length uint8) (ret ReadTo) {
 	case 8:
 		ret = ReadS8(endianConverter)
 	default:
-		log.Println(fmt.Sprintf("not supported Native(s,%v)", length))
+		logrus.Infof("not supported Native(s,%v)", length)
 	}
 	return
 }
