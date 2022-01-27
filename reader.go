@@ -11,11 +11,12 @@ import (
 type AttrReader interface {
 	Attr() *Attr
 	Accessor() interface{}
-	Read(reader Reader, parent *Item, root *Item) (ret *Item, err error)
+	ReadTo(fillItem *Item, reader Reader) (err error)
+	NewItem(parent *Item, value interface{}) *Item
 }
 
 type ReadFix func(reader Reader) (ret interface{}, err error)
-type ReadDynamic func(reader Reader, parent *Item, root *Item) (ret interface{}, err error)
+type ReadDynamic func(reader Reader, parent *Item) (ret interface{}, err error)
 type Convert func(data []byte) (ret interface{}, err error)
 
 type AttrReaderBase struct {
@@ -31,14 +32,15 @@ func (o *AttrReaderBase) Accessor() interface{} {
 	return o.accessor
 }
 
-func (o *AttrReaderBase) newItem(value interface{}) *Item {
-	return &Item{Attr: o.attr, Accessor: o.accessor, Value: value}
+func (o *AttrReaderBase) NewItem(parent *Item, value interface{}) *Item {
+	return &Item{Attr: o.attr, Accessor: o.accessor, Value: value, Parent: parent}
 }
 
 type Item struct {
 	Attr     *Attr
 	Accessor interface{}
 	Value    interface{}
+	Parent   *Item
 }
 
 func (o *Item) Expr(expr string) (ret *Item, err error) {
@@ -136,7 +138,7 @@ func ReadLength(reader Reader, length uint8, convert Convert) (ret interface{}, 
 }
 
 func ReadDynamicLengthExpr(expr string, convert Convert) (ret ReadDynamic) {
-	return func(reader Reader, parent *Item, root *Item) (ret interface{}, err error) {
+	return func(reader Reader, parent *Item) (ret interface{}, err error) {
 		var sizeItem *Item
 		if sizeItem, err = parent.Expr(expr); err == nil {
 			if length, ok := sizeItem.Value.(uint8); ok {

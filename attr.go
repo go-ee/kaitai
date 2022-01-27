@@ -55,18 +55,17 @@ type AttrCycleReader struct {
 	itemReader AttrReader
 }
 
-func (o *AttrCycleReader) Read(reader Reader, parent *Item, root *Item) (ret *Item, err error) {
+func (o *AttrCycleReader) ReadTo(fillItem *Item, reader Reader) (err error) {
 	var items []*Item
 	for i := 0; err == nil; i++ {
-		var item *Item
-		if item, err = o.itemReader.Read(reader, parent, root); err == nil {
-			items = append(items, item)
-		}
+		item := o.itemReader.NewItem(fillItem, nil)
+		items = append(items, item)
+		err = o.itemReader.ReadTo(item, reader)
+		fillItem.Value = items
 	}
 
 	if io.EOF == err {
 		err = nil
-		ret = &Item{Accessor: o, Value: items}
 	}
 	return
 }

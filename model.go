@@ -44,7 +44,8 @@ func (o *Model) Read(filePath string) (ret *Item, err error) {
 	if file, err = os.Open(filePath); err != nil {
 		return
 	}
-	ret, err = o.itemReader.Read(Reader{ReadSeeker: file}, nil, nil)
+	defer file.Close()
+	err = o.itemReader.ReadTo(o.itemReader.NewItem(nil, nil), Reader{ReadSeeker: file})
 	return
 }
 

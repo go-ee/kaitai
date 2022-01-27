@@ -48,7 +48,7 @@ type ContentStringReader struct {
 	value    string
 }
 
-func (o *ContentStringReader) Read(reader Reader, _ *Item, _ *Item) (ret *Item, err error) {
+func (o *ContentStringReader) ReadTo(fillItem *Item, reader Reader) (err error) {
 	var data []byte
 	//each character as a byte
 	if data, err = reader.ReadBytes(uint8(len(o.value))); err == nil {
@@ -57,7 +57,7 @@ func (o *ContentStringReader) Read(reader Reader, _ *Item, _ *Item) (ret *Item, 
 			err = fmt.Errorf("content is different, '%v' != '%v'", currentValue, o.value)
 		}
 		if err == nil {
-			ret = o.newItem(currentValue)
+			fillItem.Value = currentValue
 		}
 	}
 	return
@@ -69,7 +69,7 @@ type ContentArrayReader struct {
 	array    []byte
 }
 
-func (o *ContentArrayReader) Read(reader Reader, _ *Item, _ *Item) (ret *Item, err error) {
+func (o *ContentArrayReader) ReadTo(fillItem *Item, reader Reader) (err error) {
 	var data []byte
 	//each character as a byte
 	if data, err = reader.ReadBytes(uint8(len(o.array))); err == nil {
@@ -77,7 +77,7 @@ func (o *ContentArrayReader) Read(reader Reader, _ *Item, _ *Item) (ret *Item, e
 			err = fmt.Errorf("content is different, '%v' != '%v'", data, o.array)
 		}
 		if err == nil {
-			ret = o.newItem(data)
+			fillItem.Value = data
 		}
 	}
 	return

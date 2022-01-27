@@ -64,9 +64,9 @@ type NativeReaderFix struct {
 	fix ReadFix
 }
 
-func (o *NativeReaderFix) Read(reader Reader, _ *Item, _ *Item) (ret *Item, err error) {
+func (o *NativeReaderFix) ReadTo(fillItem *Item, reader Reader) (err error) {
 	if value, currentErr := o.fix(reader); currentErr == nil {
-		ret = o.newItem(value)
+		fillItem.Value = value
 	} else {
 		err = currentErr
 	}
@@ -78,9 +78,9 @@ type NativeReaderDynamic struct {
 	dynamic ReadDynamic
 }
 
-func (o *NativeReaderDynamic) Read(reader Reader, parent *Item, root *Item) (ret *Item, err error) {
-	if value, currentErr := o.dynamic(reader, parent, root); currentErr == nil {
-		ret = o.newItem(value)
+func (o *NativeReaderDynamic) ReadTo(fillItem *Item, reader Reader) (err error) {
+	if value, currentErr := o.dynamic(reader, fillItem.Parent); currentErr == nil {
+		fillItem.Value = value
 	} else {
 		err = currentErr
 	}
