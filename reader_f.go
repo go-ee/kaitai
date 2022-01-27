@@ -19,7 +19,7 @@ func ReadF(endianConverter EndianReader, length uint8) (ret ReadFix) {
 }
 
 func ReadF4(endianConverter EndianReader) ReadFix {
-	return func(reader Reader) (ret interface{}, err error) {
+	return func(reader *Reader) (ret interface{}, err error) {
 		var data []byte
 		if data, err = reader.ReadBytes(4); err == nil {
 			ret = math.Float32frombits(endianConverter.Uint32(data))
@@ -29,7 +29,7 @@ func ReadF4(endianConverter EndianReader) ReadFix {
 }
 
 func ReadF8(endianConverter EndianReader) ReadFix {
-	return func(reader Reader) (ret interface{}, err error) {
+	return func(reader *Reader) (ret interface{}, err error) {
 		var data []byte
 		if data, err = reader.ReadBytes(8); err == nil {
 			ret = math.Float64frombits(endianConverter.Uint64(data))

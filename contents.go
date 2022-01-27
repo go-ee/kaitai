@@ -48,10 +48,13 @@ type ContentStringReader struct {
 	value    string
 }
 
-func (o *ContentStringReader) ReadTo(fillItem *Item, reader Reader) (err error) {
+func (o *ContentStringReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
+
+	fillItem.SetStartPos(reader)
+
 	var data []byte
 	//each character as a byte
-	if data, err = reader.ReadBytes(uint8(len(o.value))); err == nil {
+	if data, err = reader.ReadBytes(uint16(len(o.value))); err == nil {
 		currentValue := string(data)
 		if o.validate && currentValue != o.value {
 			err = fmt.Errorf("content is different, '%v' != '%v'", currentValue, o.value)
@@ -60,6 +63,9 @@ func (o *ContentStringReader) ReadTo(fillItem *Item, reader Reader) (err error) 
 			fillItem.Value = currentValue
 		}
 	}
+
+	fillItem.SetEndPos(reader)
+
 	return
 }
 
@@ -69,10 +75,13 @@ type ContentArrayReader struct {
 	array    []byte
 }
 
-func (o *ContentArrayReader) ReadTo(fillItem *Item, reader Reader) (err error) {
+func (o *ContentArrayReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
+
+	fillItem.SetStartPos(reader)
+
 	var data []byte
 	//each character as a byte
-	if data, err = reader.ReadBytes(uint8(len(o.array))); err == nil {
+	if data, err = reader.ReadBytes(uint16(len(o.array))); err == nil {
 		if o.validate && bytes.Compare(data, o.array) != 0 {
 			err = fmt.Errorf("content is different, '%v' != '%v'", data, o.array)
 		}
@@ -80,5 +89,8 @@ func (o *ContentArrayReader) ReadTo(fillItem *Item, reader Reader) (err error) {
 			fillItem.Value = data
 		}
 	}
+
+	fillItem.SetEndPos(reader)
+
 	return
 }

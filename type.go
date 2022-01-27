@@ -20,8 +20,8 @@ func (o *Type) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error) {
 
 func (o *Type) buildSeqReaders(spec *Spec) (ret []AttrReader, err error) {
 	readers := make([]AttrReader, len(o.Seq))
-	for i, seqAttr := range o.Seq {
-		if readers[i], err = seqAttr.BuildReader(spec); err != nil {
+	for i, attr := range o.Seq {
+		if readers[i], err = attr.BuildReader(spec); err != nil {
 			return
 		}
 	}
@@ -37,7 +37,10 @@ type TypeReader struct {
 	readers []AttrReader
 }
 
-func (o *TypeReader) ReadTo(fillItem *Item, reader Reader) (err error) {
+func (o *TypeReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
+
+	fillItem.SetStartPos(reader)
+
 	data := map[string]*Item{}
 	fillItem.Value = data
 
@@ -48,5 +51,8 @@ func (o *TypeReader) ReadTo(fillItem *Item, reader Reader) (err error) {
 			break
 		}
 	}
+
+	fillItem.SetEndPos(reader)
+
 	return
 }

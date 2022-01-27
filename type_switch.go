@@ -51,9 +51,9 @@ type TypeSwitchReader struct {
 	defaultCase     AttrReader
 }
 
-func (o *TypeSwitchReader) ReadTo(fillItem *Item, reader Reader) (err error) {
+func (o *TypeSwitchReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
 	var switchValue string
-	if switchValue, err = o.findSwitchValue(o.attr, fillItem); err != nil {
+	if switchValue, err = o.findSwitchValue(o.attr, fillItem.Parent); err != nil {
 		return
 	}
 

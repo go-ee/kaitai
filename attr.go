@@ -44,6 +44,8 @@ func (o *Attr) BuildReader(spec *Spec) (ret AttrReader, err error) {
 
 	if o.Repeat == "eos" {
 		ret = &AttrCycleReader{&AttrReaderBase{attr: o}, itemReader}
+	} else if o.Size != "" {
+		ret = &AttrSizeReader{&AttrReaderBase{attr: o}, itemReader}
 	} else {
 		ret = itemReader
 	}
@@ -55,17 +57,58 @@ type AttrCycleReader struct {
 	itemReader AttrReader
 }
 
-func (o *AttrCycleReader) ReadTo(fillItem *Item, reader Reader) (err error) {
+func (o *AttrCycleReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
+
+	fillItem.SetStartPos(reader)
+
 	var items []*Item
 	for i := 0; err == nil; i++ {
 		item := o.itemReader.NewItem(fillItem, nil)
 		items = append(items, item)
-		err = o.itemReader.ReadTo(item, reader)
 		fillItem.Value = items
+		err = o.itemReader.ReadTo(item, reader)
 	}
 
 	if io.EOF == err {
 		err = nil
 	}
+
+	fillItem.SetEndPos(reader)
+
+	return
+}
+
+type AttrSizeReader struct {
+	*AttrReaderBase
+	itemReader AttrReader
+}
+
+func (o *AttrSizeReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
+
+	fillItem.SetStartPos(reader)
+
+	var sizeItem *Item
+	if sizeItem, err = fillItem.Parent.Expr(o.attr.Size); err != nil {
+		return
+	}
+
+	var length uint16
+	if length, err = toUint16(sizeItem.Value); err != nil {
+		return
+	}
+
+	var sizeReader *Reader
+	if sizeReader, err = reader.ReadBytesAsReader(length); err != nil {
+		return
+	}
+
+	err = o.itemReader.ReadTo(fillItem, sizeReader)
+
+	if io.EOF == err {
+		err = nil
+	}
+
+	fillItem.SetEndPos(reader)
+
 	return
 }

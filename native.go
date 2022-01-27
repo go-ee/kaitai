@@ -3,6 +3,7 @@ package kaitai
 import (
 	"encoding/binary"
 	"fmt"
+	"io"
 	"math"
 	"regexp"
 )
@@ -64,12 +65,16 @@ type NativeReaderFix struct {
 	fix ReadFix
 }
 
-func (o *NativeReaderFix) ReadTo(fillItem *Item, reader Reader) (err error) {
+func (o *NativeReaderFix) ReadTo(fillItem *Item, reader *Reader) (err error) {
+	fillItem.SetStartPos(reader)
+
 	if value, currentErr := o.fix(reader); currentErr == nil {
 		fillItem.Value = value
 	} else {
 		err = currentErr
 	}
+
+	fillItem.SetEndPos(reader)
 	return
 }
 
@@ -78,12 +83,16 @@ type NativeReaderDynamic struct {
 	dynamic ReadDynamic
 }
 
-func (o *NativeReaderDynamic) ReadTo(fillItem *Item, reader Reader) (err error) {
+func (o *NativeReaderDynamic) ReadTo(fillItem *Item, reader *Reader) (err error) {
+	fillItem.SetStartPos(reader)
+
 	if value, currentErr := o.dynamic(reader, fillItem.Parent); currentErr == nil {
 		fillItem.Value = value
 	} else {
 		err = currentErr
 	}
+
+	fillItem.SetEndPos(reader)
 	return
 }
 
@@ -101,7 +110,7 @@ type EndianReader interface {
 	Uint64(data []byte) uint64
 	Float32fromBits(data []byte) float32
 	Float64fromBits(data []byte) float64
-	ReadBitsInt(reader Reader, n uint8) (ret uint64, err error)
+	ReadBitsInt(reader *Reader, n uint8) (ret uint64, err error)
 }
 
 var BigEndianConverter *bigEndianConverter
@@ -135,7 +144,10 @@ func (o *bigEndianConverter) Float64fromBits(data []byte) float64 {
 	return math.Float64frombits(binary.BigEndian.Uint64(data))
 }
 
-func (o *bigEndianConverter) ReadBitsInt(reader Reader, n uint8) (ret uint64, err error) {
+func (o *bigEndianConverter) ReadBitsInt(reader *Reader, n uint8) (ret uint64, err error) {
+
+	start, _ := reader.Seek(0, io.SeekCurrent)
+
 	bitsNeeded := int(n) - int(reader.bitsLeft)
 	if bitsNeeded > 0 {
 		// 1 bit  => 1 byte
@@ -166,6 +178,9 @@ func (o *bigEndianConverter) ReadBitsInt(reader Reader, n uint8) (ret uint64, er
 	reader.bitsLeft -= n
 	mask = (1 << reader.bitsLeft) - 1
 	reader.bits &= mask
+
+	end, _ := reader.Seek(0, io.SeekCurrent)
+	println(start, end)
 
 	return
 }
@@ -198,7 +213,10 @@ func (o *littleEndianConverter) Float64fromBits(data []byte) float64 {
 	return math.Float64frombits(binary.LittleEndian.Uint64(data))
 }
 
-func (o *littleEndianConverter) ReadBitsInt(reader Reader, length uint8) (ret uint64, err error) {
+func (o *littleEndianConverter) ReadBitsInt(reader *Reader, length uint8) (ret uint64, err error) {
+
+	start, _ := reader.Seek(0, io.SeekCurrent)
+
 	bitsNeeded := int(length) - int(reader.bitsLeft)
 	var bitsLeft = uint64(reader.bitsLeft)
 	if bitsNeeded > 0 {
@@ -227,6 +245,9 @@ func (o *littleEndianConverter) ReadBitsInt(reader Reader, length uint8) (ret ui
 	// remove bottom bits that we've just read by shifting
 	reader.bits >>= length
 	reader.bitsLeft = uint8(bitsLeft) - length
+
+	end, _ := reader.Seek(0, io.SeekCurrent)
+	println(start, end)
 
 	return
 }
