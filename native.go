@@ -32,13 +32,13 @@ func (o *Native) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error)
 	case "strz":
 		readTo = BuildReadAttr(attr, ToString)
 	case "b":
-		readTo = ReadB(endianConverter, o.Length)
+		readTo = BuildReadB(endianConverter, o.Length)
 	case "u":
-		readTo = ReadU(endianConverter, o.Length)
+		readTo = BuildReadU(endianConverter, o.Length)
 	case "s":
-		readTo = ReadS(endianConverter, o.Length)
+		readTo = BuildReadS(endianConverter, o.Length)
 	case "f":
-		readTo = ReadF(endianConverter, o.Length)
+		readTo = BuildReadF(endianConverter, o.Length)
 	default:
 		err = fmt.Errorf("not supported Native(%v,%v)", o.Type, o.Length)
 	}

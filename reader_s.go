@@ -4,23 +4,23 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ReadS(endianConverter EndianReader, length uint8) (ret ReadTo) {
+func BuildReadS(endianConverter EndianReader, length uint8) (ret ReadTo) {
 	switch length {
 	case 1:
-		ret = ReadS1()
+		ret = BuildReadS1()
 	case 2:
-		ret = ReadS2(endianConverter)
+		ret = BuildReadS2(endianConverter)
 	case 4:
-		ret = ReadS4(endianConverter)
+		ret = BuildReadS4(endianConverter)
 	case 8:
-		ret = ReadS8(endianConverter)
+		ret = BuildReadS8(endianConverter)
 	default:
 		logrus.Infof("not supported Native(s,%v)", length)
 	}
 	return
 }
 
-func ReadS8(endianConverter EndianReader) ReadTo {
+func BuildReadS8(endianConverter EndianReader) ReadTo {
 	return func(fillItem *Item, reader *Reader) (err error) {
 		fillItem.SetStartPos(reader)
 		if fillItem.Raw, err = reader.ReadBytes(8); err == nil {
@@ -31,7 +31,7 @@ func ReadS8(endianConverter EndianReader) ReadTo {
 	}
 }
 
-func ReadS4(endianConverter EndianReader) ReadTo {
+func BuildReadS4(endianConverter EndianReader) ReadTo {
 	return func(fillItem *Item, reader *Reader) (err error) {
 		fillItem.SetStartPos(reader)
 		if fillItem.Raw, err = reader.ReadBytes(4); err == nil {
@@ -42,7 +42,7 @@ func ReadS4(endianConverter EndianReader) ReadTo {
 	}
 }
 
-func ReadS2(endianConverter EndianReader) ReadTo {
+func BuildReadS2(endianConverter EndianReader) ReadTo {
 	return func(fillItem *Item, reader *Reader) (err error) {
 		fillItem.SetStartPos(reader)
 		if fillItem.Raw, err = reader.ReadBytes(2); err == nil {
@@ -53,7 +53,7 @@ func ReadS2(endianConverter EndianReader) ReadTo {
 	}
 }
 
-func ReadS1() ReadTo {
+func BuildReadS1() ReadTo {
 	return func(fillItem *Item, reader *Reader) (err error) {
 		fillItem.SetStartPos(reader)
 		if fillItem.Raw, err = reader.ReadBytes(1); err == nil {

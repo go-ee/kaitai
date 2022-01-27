@@ -5,19 +5,19 @@ import (
 	"log"
 )
 
-func ReadF(endianConverter EndianReader, length uint8) (ret ReadTo) {
+func BuildReadF(endianConverter EndianReader, length uint8) (ret ReadTo) {
 	switch length {
 	case 4:
-		ret = ReadF4(endianConverter)
+		ret = BuildReadF4(endianConverter)
 	case 8:
-		ret = ReadF8(endianConverter)
+		ret = BuildReadF8(endianConverter)
 	default:
 		log.Println(fmt.Sprintf("not supported Native(f,%v)", length))
 	}
 	return
 }
 
-func ReadF4(endianConverter EndianReader) ReadTo {
+func BuildReadF4(endianConverter EndianReader) ReadTo {
 	return func(fillItem *Item, reader *Reader) (err error) {
 		fillItem.SetStartPos(reader)
 		if fillItem.Raw, err = reader.ReadBytes(4); err == nil {
@@ -28,7 +28,7 @@ func ReadF4(endianConverter EndianReader) ReadTo {
 	}
 }
 
-func ReadF8(endianConverter EndianReader) ReadTo {
+func BuildReadF8(endianConverter EndianReader) ReadTo {
 	return func(fillItem *Item, reader *Reader) (err error) {
 		fillItem.SetStartPos(reader)
 		if fillItem.Raw, err = reader.ReadBytes(8); err == nil {

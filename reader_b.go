@@ -1,18 +1,18 @@
 package kaitai
 
-func ReadB(endianConverter EndianReader, length uint8) (ret ReadTo) {
+func BuildReadB(endianConverter EndianReader, length uint8) (ret ReadTo) {
 	switch length {
 	case 1:
-		ret = ReadB1(endianConverter)
+		ret = BuildReadB1(endianConverter)
 	case 2:
-		ret = ReadB2(endianConverter)
+		ret = BuildReadB2(endianConverter)
 	default:
-		ret = ReadBUint64(endianConverter, length)
+		ret = BuildReadBUint64(endianConverter, length)
 	}
 	return
 }
 
-func ReadB1(endianConverter EndianReader) ReadTo {
+func BuildReadB1(endianConverter EndianReader) ReadTo {
 	return func(fillItem *Item, reader *Reader) (err error) {
 		fillItem.SetStartPos(reader)
 		var value uint64
@@ -24,7 +24,7 @@ func ReadB1(endianConverter EndianReader) ReadTo {
 	}
 }
 
-func ReadB2(endianConverter EndianReader) ReadTo {
+func BuildReadB2(endianConverter EndianReader) ReadTo {
 	return func(fillItem *Item, reader *Reader) (err error) {
 		fillItem.SetStartPos(reader)
 		var value uint64
@@ -36,7 +36,7 @@ func ReadB2(endianConverter EndianReader) ReadTo {
 	}
 }
 
-func ReadBUint64(endianConverter EndianReader, length uint8) ReadTo {
+func BuildReadBUint64(endianConverter EndianReader, length uint8) ReadTo {
 	return func(fillItem *Item, reader *Reader) (err error) {
 		fillItem.SetStartPos(reader)
 		var value uint64
