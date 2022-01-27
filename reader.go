@@ -91,6 +91,7 @@ func (o *Item) SetValue(value interface{}) {
 
 type Reader struct {
 	io.ReadSeeker
+	lazy   bool
 	offset int64
 	buf    [8]byte
 
