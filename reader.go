@@ -13,11 +13,11 @@ type AttrReader interface {
 	Attr() *Attr
 	Accessor() interface{}
 	ReadTo(fillItem *Item, reader *Reader) (err error)
-	NewItem(parent *Item, value interface{}) *Item
+	NewItem(parent *Item) *Item
 }
 
 type ReadTo func(fillItem *Item, reader *Reader) (err error)
-type Convert func(data []byte) (ret interface{}, err error)
+type Decode func(fillItem *Item)
 
 type AttrReaderBase struct {
 	attr     *Attr
@@ -32,8 +32,8 @@ func (o *AttrReaderBase) Accessor() interface{} {
 	return o.accessor
 }
 
-func (o *AttrReaderBase) NewItem(parent *Item, value interface{}) *Item {
-	return &Item{Attr: o.attr, Accessor: o.accessor, Value: value, Parent: parent}
+func (o *AttrReaderBase) NewItem(parent *Item) *Item {
+	return &Item{Attr: o.attr, Accessor: o.accessor, Parent: parent}
 }
 
 type ReadToReader struct {
@@ -46,19 +46,28 @@ func (o *ReadToReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
 }
 
 type Item struct {
-	Value    interface{}
+	value    interface{}
+	Err      error
 	Parent   *Item
 	StartPos int64
 	EndPos   int64
 	Raw      []byte
 	Attr     *Attr
 	Accessor interface{}
+	Decode   Decode
+}
+
+func (o *Item) Value() interface{} {
+	if o.value == nil && o.Err == nil {
+		o.Decode(o)
+	}
+	return o.value
 }
 
 func (o *Item) Expr(expr string) (ret *Item, err error) {
 	ret = o
 	for _, part := range strings.Split(expr, ".") {
-		if value, ok := ret.Value.(map[string]*Item); ok {
+		if value, ok := ret.Value().(map[string]*Item); ok {
 			if ret = value[part]; ret == nil {
 				err = fmt.Errorf("can't resolve '%v' of expression '%v'", part, expr)
 				break
@@ -79,12 +88,15 @@ func (o *Item) SetEndPos(reader *Reader) {
 	o.EndPos = reader.Position()
 }
 
+func (o *Item) SetValue(value interface{}) {
+	o.value = value
+}
+
 type Reader struct {
 	io.ReadSeeker
 	offset int64
 	buf    [8]byte
 
-	// Number of bits remaining in "bits" for sequential calls to ReadBitsInt
 	bitsLeft uint8
 	bits     uint64
 }
@@ -117,81 +129,68 @@ func (o *Reader) Position() (ret int64) {
 	return o.offset + ret
 }
 
-func ReadAttr(attr *Attr, convert Convert) (ret ReadTo) {
+func BuildReadAttr(attr *Attr, parse Decode) (ret ReadTo) {
 	if attr.SizeEos == "true" {
-		ret = ReadFixFull(convert)
+		ret = BuildReadToFull(parse)
 	} else if attr.Size != "" {
 		if length, err := strconv.Atoi(attr.Size); err == nil {
-			ret = ReadFixLength(uint16(length), convert)
+			ret = BuildReadToLength(uint16(length), parse)
 		} else {
-			ret = ReadDynamicLengthExpr(attr.Size, convert)
+			ret = ReadToLengthExpr(attr.Size, parse)
 		}
 	}
 	return
 }
 
-func ReadFixFull(convert Convert) (ret ReadTo) {
+func BuildReadToFull(parse Decode) (ret ReadTo) {
 	return func(fillItem *Item, reader *Reader) (err error) {
-		fillItem.Value, fillItem.Raw, err = ReadFull(reader, convert)
-		return
-	}
-}
-
-func ReadFull(reader *Reader, convert Convert) (ret interface{}, raw []byte, err error) {
-	var data []byte
-	if data, err = reader.ReadBytesFull(); err == nil {
-		ret, err = convert(data)
-	}
-	return
-}
-
-func ReadFixLength(length uint16, convert Convert) (ret ReadTo) {
-	return func(fillItem *Item, reader *Reader) (err error) {
+		fillItem.Decode = parse
 		fillItem.SetStartPos(reader)
-		fillItem.Value, fillItem.Raw, err = ReadLength(length, reader, convert)
+		fillItem.Raw, err = reader.ReadBytesFull()
 		fillItem.SetEndPos(reader)
 		return
 	}
 }
 
-func ReadLength(length uint16, reader *Reader, convert Convert) (ret interface{}, raw []byte, err error) {
-	if length > 0 {
-		raw, err = reader.ReadBytes(length)
-	} else {
-		raw, err = reader.ReadBytesFull()
+func BuildReadToLength(length uint16, parse Decode) (ret ReadTo) {
+	return func(fillItem *Item, reader *Reader) (err error) {
+		return ReadToLength(fillItem, reader, length, parse)
 	}
+}
 
-	if err == nil {
-		ret, err = convert(raw)
+func ReadToLength(fillItem *Item, reader *Reader, length uint16, parse Decode) (err error) {
+	fillItem.SetStartPos(reader)
+	fillItem.Decode = parse
+	if length > 0 {
+		fillItem.Raw, err = reader.ReadBytes(length)
+	} else {
+		fillItem.Raw, err = reader.ReadBytesFull()
 	}
+	fillItem.SetEndPos(reader)
 	return
 }
 
-func ReadDynamicLengthExpr(expr string, convert Convert) (ret ReadTo) {
+func ReadToLengthExpr(expr string, parse Decode) (ret ReadTo) {
 	return func(fillItem *Item, reader *Reader) (err error) {
 		var sizeItem *Item
 		if sizeItem, err = fillItem.Parent.Expr(expr); err == nil {
 			var length uint16
-			if length, err = toUint16(sizeItem.Value); err == nil {
-				fillItem.SetStartPos(reader)
-				fillItem.Value, fillItem.Raw, err = ReadLength(length, reader, convert)
-				fillItem.SetEndPos(reader)
+			if length, err = toUint16(sizeItem.Value()); err == nil {
+				return ReadToLength(fillItem, reader, length, parse)
 			} else {
-				err = fmt.Errorf("cant parse Size to uint64, expr=%v, valiue=%v, %v", expr, sizeItem.Value, err)
+				err = fmt.Errorf("cant parse Size to uint64, expr=%v, valiue=%v, %v", expr, sizeItem.Value(), err)
 			}
 		}
 		return
 	}
 }
 
-func ToString(data []byte) (ret interface{}, _ error) {
-	ret = string(data)
-	return
+func RawToValueString(fillItem *Item) {
+	fillItem.SetValue(string(fillItem.Raw))
 }
 
-func ToSame(data []byte) (ret interface{}, _ error) {
-	ret = data
-	return
+func RawToValue(fillItem *Item) {
+	fillItem.SetValue(fillItem.Raw)
 }
 
 func toUint16(value interface{}) (ret uint16, err error) {

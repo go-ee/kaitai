@@ -26,7 +26,7 @@ func (o *TypeSwitch) buildSwitchValueFinder() func(attr *Attr, item *Item) (ret 
 		if switchOnValue, err = parent.Expr(o.SwitchOn); err != nil {
 			return
 		}
-		ret = fmt.Sprintf("%v", switchOnValue.Value)
+		ret = fmt.Sprintf("%v", switchOnValue.Value())
 		return
 	}
 }

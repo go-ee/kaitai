@@ -25,7 +25,7 @@ func ReadU1() ReadTo {
 	return func(fillItem *Item, reader *Reader) (err error) {
 		fillItem.SetStartPos(reader)
 		if fillItem.Raw, err = reader.ReadBytes(1); err == nil {
-			fillItem.Value = fillItem.Raw[0]
+			fillItem.SetValue(fillItem.Raw[0])
 		}
 		fillItem.SetEndPos(reader)
 		return
@@ -36,7 +36,7 @@ func ReadU2(endianConverter EndianReader) ReadTo {
 	return func(fillItem *Item, reader *Reader) (err error) {
 		fillItem.SetStartPos(reader)
 		if fillItem.Raw, err = reader.ReadBytes(2); err == nil {
-			fillItem.Value = endianConverter.Uint16(fillItem.Raw)
+			fillItem.SetValue(endianConverter.Uint16(fillItem.Raw))
 		}
 		fillItem.SetEndPos(reader)
 		return
@@ -47,7 +47,7 @@ func ReadU4(endianConverter EndianReader) ReadTo {
 	return func(fillItem *Item, reader *Reader) (err error) {
 		fillItem.SetStartPos(reader)
 		if fillItem.Raw, err = reader.ReadBytes(4); err == nil {
-			fillItem.Value = endianConverter.Uint32(fillItem.Raw)
+			fillItem.SetValue(endianConverter.Uint32(fillItem.Raw))
 		}
 		fillItem.SetEndPos(reader)
 		return
@@ -58,7 +58,7 @@ func ReadU8(endianConverter EndianReader) ReadTo {
 	return func(fillItem *Item, reader *Reader) (err error) {
 		fillItem.SetStartPos(reader)
 		if fillItem.Raw, err = reader.ReadBytes(8); err == nil {
-			fillItem.Value = endianConverter.Uint64(fillItem.Raw)
+			fillItem.SetValue(endianConverter.Uint64(fillItem.Raw))
 		}
 		fillItem.SetEndPos(reader)
 		return

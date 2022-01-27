@@ -28,9 +28,9 @@ func (o *Native) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error)
 
 	switch o.Type {
 	case "str":
-		readTo = ReadAttr(attr, ToString)
+		readTo = BuildReadAttr(attr, RawToValueString)
 	case "strz":
-		readTo = ReadAttr(attr, ToString)
+		readTo = BuildReadAttr(attr, RawToValueString)
 	case "b":
 		readTo = ReadB(endianConverter, o.Length)
 	case "u":

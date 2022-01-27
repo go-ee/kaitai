@@ -52,15 +52,14 @@ func (o *ContentStringReader) ReadTo(fillItem *Item, reader *Reader) (err error)
 
 	fillItem.SetStartPos(reader)
 
-	var data []byte
 	//each character as a byte
-	if data, err = reader.ReadBytes(uint16(len(o.value))); err == nil {
-		currentValue := string(data)
+	if fillItem.Raw, err = reader.ReadBytes(uint16(len(o.value))); err == nil {
+		currentValue := string(fillItem.Raw)
 		if o.validate && currentValue != o.value {
 			err = fmt.Errorf("content is different, '%v' != '%v'", currentValue, o.value)
 		}
 		if err == nil {
-			fillItem.Value = currentValue
+			fillItem.SetValue(currentValue)
 		}
 	}
 
@@ -79,14 +78,13 @@ func (o *ContentArrayReader) ReadTo(fillItem *Item, reader *Reader) (err error) 
 
 	fillItem.SetStartPos(reader)
 
-	var data []byte
 	//each character as a byte
-	if data, err = reader.ReadBytes(uint16(len(o.array))); err == nil {
-		if o.validate && bytes.Compare(data, o.array) != 0 {
-			err = fmt.Errorf("content is different, '%v' != '%v'", data, o.array)
+	if fillItem.Raw, err = reader.ReadBytes(uint16(len(o.array))); err == nil {
+		if o.validate && bytes.Compare(fillItem.Raw, o.array) != 0 {
+			err = fmt.Errorf("content is different, '%v' != '%v'", fillItem.Raw, o.array)
 		}
 		if err == nil {
-			fillItem.Value = data
+			fillItem.SetValue(fillItem.Raw)
 		}
 	}
 

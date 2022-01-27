@@ -3,7 +3,6 @@ package kaitai
 import (
 	"fmt"
 	"log"
-	"math"
 )
 
 func ReadF(endianConverter EndianReader, length uint8) (ret ReadTo) {
@@ -22,7 +21,7 @@ func ReadF4(endianConverter EndianReader) ReadTo {
 	return func(fillItem *Item, reader *Reader) (err error) {
 		fillItem.SetStartPos(reader)
 		if fillItem.Raw, err = reader.ReadBytes(4); err == nil {
-			fillItem.Value = math.Float32frombits(endianConverter.Uint32(fillItem.Raw))
+			fillItem.SetValue(endianConverter.Float32fromBits(fillItem.Raw))
 		}
 		fillItem.SetEndPos(reader)
 		return
@@ -33,7 +32,7 @@ func ReadF8(endianConverter EndianReader) ReadTo {
 	return func(fillItem *Item, reader *Reader) (err error) {
 		fillItem.SetStartPos(reader)
 		if fillItem.Raw, err = reader.ReadBytes(8); err == nil {
-			fillItem.Value = math.Float64frombits(endianConverter.Uint64(fillItem.Raw))
+			fillItem.SetValue(endianConverter.Float64fromBits(fillItem.Raw))
 		}
 		fillItem.SetEndPos(reader)
 		return

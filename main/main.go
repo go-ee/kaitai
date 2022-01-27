@@ -29,9 +29,9 @@ func main() {
 		panic(err)
 	}
 
-	m := item.Value.(map[string]*kaitai.Item)
+	m := item.Value().(map[string]*kaitai.Item)
 	recordsItem := m["records"]
-	records := recordsItem.Value.([]*kaitai.Item)
+	records := recordsItem.Value().([]*kaitai.Item)
 
 	println(len(records), duration(time.Now().Sub(start)))
 

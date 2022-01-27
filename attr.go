@@ -1,6 +1,7 @@
 package kaitai
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 )
@@ -37,7 +38,7 @@ func (o *Attr) BuildReader(spec *Spec) (ret AttrReader, err error) {
 	} else if o.Contents != nil {
 		itemReader, err = o.Contents.BuildReader(o, spec)
 	} else if o.SizeEos == "true" {
-		itemReader = &ReadToReader{&AttrReaderBase{attr: o}, ReadFixFull(ToSame)}
+		itemReader = &ReadToReader{&AttrReaderBase{attr: o}, BuildReadToFull(RawToValue)}
 	} else {
 		err = fmt.Errorf("read attr: ELSE, not implemented yet")
 	}
@@ -58,23 +59,19 @@ type AttrCycleReader struct {
 }
 
 func (o *AttrCycleReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
-
 	fillItem.SetStartPos(reader)
-
 	var items []*Item
 	for i := 0; err == nil; i++ {
-		item := o.itemReader.NewItem(fillItem, nil)
+		item := o.itemReader.NewItem(fillItem)
 		items = append(items, item)
-		fillItem.Value = items
+		fillItem.SetValue(items)
 		err = o.itemReader.ReadTo(item, reader)
 	}
 
 	if io.EOF == err {
 		err = nil
 	}
-
 	fillItem.SetEndPos(reader)
-
 	return
 }
 
@@ -93,22 +90,31 @@ func (o *AttrSizeReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
 	}
 
 	var length uint16
-	if length, err = toUint16(sizeItem.Value); err != nil {
+	if length, err = toUint16(sizeItem.Value()); err != nil {
 		return
 	}
 
-	var sizeReader *Reader
-	if sizeReader, fillItem.Raw, err = reader.ReadBytesAsReader(length); err != nil {
-		return
-	}
+	parser := RawReaderParser{offset: reader.Position()}
+	fillItem.Decode = parser.Decode
+	fillItem.Raw, err = reader.ReadBytes(length)
+	fillItem.SetEndPos(reader)
 
-	err = o.itemReader.ReadTo(fillItem, sizeReader)
+	return
+}
 
+type RawReaderParser struct {
+	offset     int64
+	itemReader AttrReader
+}
+
+func (o *RawReaderParser) Decode(fillItem *Item) {
+	reader := &Reader{ReadSeeker: bytes.NewReader(fillItem.Raw), offset: o.offset}
+	err := o.itemReader.ReadTo(fillItem, reader)
 	if io.EOF == err {
 		err = nil
 	}
-
-	fillItem.SetEndPos(reader)
-
+	if err != nil {
+		fillItem.Err = err
+	}
 	return
 }

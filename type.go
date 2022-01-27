@@ -38,21 +38,16 @@ type TypeReader struct {
 }
 
 func (o *TypeReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
-
 	fillItem.SetStartPos(reader)
-
 	data := map[string]*Item{}
-	fillItem.Value = data
-
+	fillItem.SetValue(data)
 	for _, attrReader := range o.readers {
-		item := attrReader.NewItem(fillItem, nil)
+		item := attrReader.NewItem(fillItem)
 		data[item.Attr.Id] = item
 		if err = attrReader.ReadTo(item, reader); err != nil {
 			break
 		}
 	}
-
 	fillItem.SetEndPos(reader)
-
 	return
 }

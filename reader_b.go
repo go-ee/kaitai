@@ -17,7 +17,7 @@ func ReadB1(endianConverter EndianReader) ReadTo {
 		fillItem.SetStartPos(reader)
 		var value uint64
 		if value, err = endianConverter.ReadBitsInt(reader, 1); err == nil {
-			fillItem.Value = value != 0
+			fillItem.SetValue(value != 0)
 		}
 		fillItem.SetEndPos(reader)
 		return
@@ -29,7 +29,7 @@ func ReadB2(endianConverter EndianReader) ReadTo {
 		fillItem.SetStartPos(reader)
 		var value uint64
 		if value, err = endianConverter.ReadBitsInt(reader, 2); err == nil {
-			fillItem.Value = uint(value)
+			fillItem.SetValue(uint(value))
 		}
 		fillItem.SetEndPos(reader)
 		return
@@ -41,7 +41,7 @@ func ReadBUint64(endianConverter EndianReader, length uint8) ReadTo {
 		fillItem.SetStartPos(reader)
 		var value uint64
 		if value, err = endianConverter.ReadBitsInt(reader, length); err == nil {
-			fillItem.Value = value
+			fillItem.SetValue(value)
 		}
 		fillItem.SetEndPos(reader)
 		return
