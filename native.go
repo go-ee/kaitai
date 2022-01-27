@@ -44,10 +44,7 @@ func (o *Native) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error)
 	}
 
 	if readTo != nil {
-		ret = &ReadToReader{
-			AttrReaderBase: &AttrReaderBase{attr, o},
-			readTo:         readTo,
-		}
+		ret = &ReadToReader{attr, o, readTo}
 	}
 	return
 }

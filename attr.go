@@ -38,15 +38,15 @@ func (o *Attr) BuildReader(spec *Spec) (ret AttrReader, err error) {
 	} else if o.Contents != nil {
 		itemReader, err = o.Contents.BuildReader(o, spec)
 	} else if o.SizeEos == "true" {
-		itemReader = &ReadToReader{&AttrReaderBase{attr: o}, BuildReadToFull(RawToValue)}
+		itemReader = &ReadToReader{attr: o, readTo: BuildReadToFull(RawToValue)}
 	} else {
 		err = fmt.Errorf("read attr: ELSE, not implemented yet")
 	}
 
 	if o.Repeat == "eos" {
-		ret = &AttrCycleReader{&AttrReaderBase{attr: o}, itemReader}
+		ret = &AttrCycleReader{attr: o, itemReader: itemReader}
 	} else if o.Size != "" {
-		ret = &AttrSizeReader{&AttrReaderBase{attr: o}, itemReader}
+		ret = &AttrSizeReader{attr: o, itemReader: itemReader}
 	} else {
 		ret = itemReader
 	}
@@ -54,7 +54,8 @@ func (o *Attr) BuildReader(spec *Spec) (ret AttrReader, err error) {
 }
 
 type AttrCycleReader struct {
-	*AttrReaderBase
+	attr       *Attr
+	accessor   interface{}
 	itemReader AttrReader
 }
 
@@ -75,15 +76,26 @@ func (o *AttrCycleReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
 	return
 }
 
+func (o *AttrCycleReader) Attr() *Attr {
+	return o.attr
+}
+
+func (o *AttrCycleReader) Accessor() interface{} {
+	return o.accessor
+}
+
+func (o *AttrCycleReader) NewItem(parent *Item) *Item {
+	return &Item{Attr: o.attr, Accessor: o.accessor, Parent: parent}
+}
+
 type AttrSizeReader struct {
-	*AttrReaderBase
+	attr       *Attr
+	accessor   interface{}
 	itemReader AttrReader
 }
 
 func (o *AttrSizeReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
-
 	fillItem.SetStartPos(reader)
-
 	var sizeItem *Item
 	if sizeItem, err = fillItem.Parent.Expr(o.attr.Size); err != nil {
 		return
@@ -100,6 +112,18 @@ func (o *AttrSizeReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
 	fillItem.SetEndPos(reader)
 
 	return
+}
+
+func (o *AttrSizeReader) Attr() *Attr {
+	return o.attr
+}
+
+func (o *AttrSizeReader) Accessor() interface{} {
+	return o.accessor
+}
+
+func (o *AttrSizeReader) NewItem(parent *Item) *Item {
+	return &Item{Attr: o.attr, Accessor: o.accessor, Parent: parent}
 }
 
 type RawReaderParser struct {

@@ -9,11 +9,7 @@ type Type struct {
 func (o *Type) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error) {
 	var readers []AttrReader
 	if readers, err = o.buildSeqReaders(spec); err == nil {
-		typeReader := &TypeReader{
-			AttrReaderBase: &AttrReaderBase{attr, o},
-			readers:        readers,
-		}
-		ret = typeReader
+		ret = &TypeReader{attr: attr, accessor: o, readers: readers}
 	}
 	return
 }
@@ -33,8 +29,9 @@ func (o *Type) buildSeqReaders(spec *Spec) (ret []AttrReader, err error) {
 }
 
 type TypeReader struct {
-	*AttrReaderBase
-	readers []AttrReader
+	attr     *Attr
+	accessor interface{}
+	readers  []AttrReader
 }
 
 func (o *TypeReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
@@ -50,4 +47,16 @@ func (o *TypeReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
 	}
 	fillItem.SetEndPos(reader)
 	return
+}
+
+func (o *TypeReader) Attr() *Attr {
+	return o.attr
+}
+
+func (o *TypeReader) Accessor() interface{} {
+	return o.accessor
+}
+
+func (o *TypeReader) NewItem(parent *Item) *Item {
+	return &Item{Attr: o.attr, Accessor: o.accessor, Parent: parent}
 }

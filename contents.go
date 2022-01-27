@@ -14,17 +14,9 @@ type Contents struct {
 
 func (o *Contents) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error) {
 	if o.ContentString != "" {
-		ret = &ContentStringReader{
-			AttrReaderBase: &AttrReaderBase{attr, o},
-			value:          o.ContentString,
-			validate:       true,
-		}
+		ret = &ContentStringReader{attr: attr, accessor: o, value: o.ContentString, validate: true}
 	} else if o.ContentArray != nil {
-		ret = &ContentArrayReader{
-			AttrReaderBase: &AttrReaderBase{attr, o},
-			array:          o.ContentArray,
-			validate:       true,
-		}
+		ret = &ContentArrayReader{attr: attr, accessor: o, array: o.ContentArray, validate: true}
 	} else if o.TypeSwitch != nil {
 		ret, err = o.TypeSwitch.BuildReader(attr, spec)
 	} else {
@@ -43,13 +35,13 @@ func (o *Contents) UnmarshalYAML(unmarshal func(interface{}) error) (err error) 
 }
 
 type ContentStringReader struct {
-	*AttrReaderBase
+	attr     *Attr
+	accessor interface{}
 	validate bool
 	value    string
 }
 
 func (o *ContentStringReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
-
 	fillItem.SetStartPos(reader)
 
 	//each character as a byte
@@ -62,20 +54,30 @@ func (o *ContentStringReader) ReadTo(fillItem *Item, reader *Reader) (err error)
 			fillItem.SetValue(currentValue)
 		}
 	}
-
 	fillItem.SetEndPos(reader)
-
 	return
 }
 
+func (o *ContentStringReader) Attr() *Attr {
+	return o.attr
+}
+
+func (o *ContentStringReader) Accessor() interface{} {
+	return o.accessor
+}
+
+func (o *ContentStringReader) NewItem(parent *Item) *Item {
+	return &Item{Attr: o.attr, Accessor: o.accessor, Parent: parent}
+}
+
 type ContentArrayReader struct {
-	*AttrReaderBase
+	attr     *Attr
+	accessor interface{}
 	validate bool
 	array    []byte
 }
 
 func (o *ContentArrayReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
-
 	fillItem.SetStartPos(reader)
 
 	//each character as a byte
@@ -89,6 +91,17 @@ func (o *ContentArrayReader) ReadTo(fillItem *Item, reader *Reader) (err error) 
 	}
 
 	fillItem.SetEndPos(reader)
-
 	return
+}
+
+func (o *ContentArrayReader) Attr() *Attr {
+	return o.attr
+}
+
+func (o *ContentArrayReader) Accessor() interface{} {
+	return o.accessor
+}
+
+func (o *ContentArrayReader) NewItem(parent *Item) *Item {
+	return &Item{Attr: o.attr, Accessor: o.accessor, Parent: parent}
 }

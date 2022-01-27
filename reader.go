@@ -19,30 +19,26 @@ type AttrReader interface {
 type ReadTo func(fillItem *Item, reader *Reader) (err error)
 type Decode func(fillItem *Item)
 
-type AttrReaderBase struct {
+type ReadToReader struct {
 	attr     *Attr
 	accessor interface{}
-}
-
-func (o *AttrReaderBase) Attr() *Attr {
-	return o.attr
-}
-
-func (o *AttrReaderBase) Accessor() interface{} {
-	return o.accessor
-}
-
-func (o *AttrReaderBase) NewItem(parent *Item) *Item {
-	return &Item{Attr: o.attr, Accessor: o.accessor, Parent: parent}
-}
-
-type ReadToReader struct {
-	*AttrReaderBase
-	readTo ReadTo
+	readTo   ReadTo
 }
 
 func (o *ReadToReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
 	return o.readTo(fillItem, reader)
+}
+
+func (o *ReadToReader) Attr() *Attr {
+	return o.attr
+}
+
+func (o *ReadToReader) Accessor() interface{} {
+	return o.accessor
+}
+
+func (o *ReadToReader) NewItem(parent *Item) *Item {
+	return &Item{Attr: o.attr, Accessor: o.accessor, Parent: parent}
 }
 
 type Item struct {
