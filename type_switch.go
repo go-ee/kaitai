@@ -33,12 +33,12 @@ func (o *TypeSwitch) buildSwitchValueFinder() func(attr *Attr, item *Item) (ret 
 
 func (o *TypeSwitch) buildCaseReaders(attr *Attr, spec *Spec) (ret map[string]AttrReader, err error) {
 	ret = make(map[string]AttrReader, len(o.Cases))
-	for _, caseItem := range o.Cases {
+	for name, caseItem := range o.Cases {
 		var caseReader AttrReader
 		if caseReader, err = caseItem.BuildReader(attr, spec); err != nil {
 			return
 		}
-		ret[caseItem.Name] = caseReader
+		ret[name] = caseReader
 	}
 	return
 }
@@ -58,7 +58,7 @@ func (o *TypeSwitchReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
 	}
 
 	itemReader := o.cases[switchValue]
-	if itemReader != nil {
+	if itemReader == nil {
 		itemReader = o.defaultCase
 	}
 
