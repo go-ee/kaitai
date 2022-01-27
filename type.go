@@ -35,7 +35,6 @@ type TypeReader struct {
 }
 
 func (o *TypeReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
-	fillItem.SetStartPos(reader)
 	data := map[string]*Item{}
 	fillItem.SetValue(data)
 	for _, attrReader := range o.readers {
@@ -45,7 +44,6 @@ func (o *TypeReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
 			break
 		}
 	}
-	fillItem.SetEndPos(reader)
 	return
 }
 

@@ -13,7 +13,7 @@ type Model struct {
 	itemReader AttrReader
 }
 
-func NewModel(ksyPath string) (ret *Model, err error) {
+func NewModel(ksyPath string, options *Options) (ret *Model, err error) {
 	var data []byte
 	if data, err = ioutil.ReadFile(ksyPath); err != nil {
 		return
@@ -22,6 +22,13 @@ func NewModel(ksyPath string) (ret *Model, err error) {
 	if err = yaml.Unmarshal(data, ret.Spec); err != nil {
 		return
 	}
+
+	if options == nil {
+		options = &Options{}
+	}
+
+	ret.Spec.Options = options
+
 	err = ret.crossInit()
 	return
 }
@@ -45,6 +52,7 @@ func (o *Model) Read(filePath string) (ret *Item, err error) {
 		return
 	}
 	defer file.Close()
+
 	ret = o.itemReader.NewItem(nil)
 	err = o.itemReader.ReadTo(ret, &Reader{ReadSeeker: file})
 	return
@@ -57,6 +65,7 @@ type Spec struct {
 	Enums     map[string]*Enum     `yaml:"enums,omitempty"`
 	Doc       string               `yaml:"doc,omitempty"`
 	Instances map[string]*Instance `yaml:"instances,omitempty"`
+	Options   *Options             `-`
 }
 
 func (o *Spec) crossInit() (err error) {

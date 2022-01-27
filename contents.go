@@ -42,8 +42,6 @@ type ContentStringReader struct {
 }
 
 func (o *ContentStringReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
-	fillItem.SetStartPos(reader)
-
 	//each character as a byte
 	if fillItem.Raw, err = reader.ReadBytes(uint16(len(o.value))); err == nil {
 		currentValue := string(fillItem.Raw)
@@ -54,7 +52,6 @@ func (o *ContentStringReader) ReadTo(fillItem *Item, reader *Reader) (err error)
 			fillItem.SetValue(currentValue)
 		}
 	}
-	fillItem.SetEndPos(reader)
 	return
 }
 
@@ -78,8 +75,6 @@ type ContentArrayReader struct {
 }
 
 func (o *ContentArrayReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
-	fillItem.SetStartPos(reader)
-
 	//each character as a byte
 	if fillItem.Raw, err = reader.ReadBytes(uint16(len(o.array))); err == nil {
 		if o.validate && bytes.Compare(fillItem.Raw, o.array) != 0 {
@@ -89,8 +84,6 @@ func (o *ContentArrayReader) ReadTo(fillItem *Item, reader *Reader) (err error) 
 			fillItem.SetValue(fillItem.Raw)
 		}
 	}
-
-	fillItem.SetEndPos(reader)
 	return
 }
 

@@ -60,7 +60,6 @@ type AttrCycleReader struct {
 }
 
 func (o *AttrCycleReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
-	fillItem.SetStartPos(reader)
 	var items []*Item
 	for i := 0; err == nil; i++ {
 		item := o.itemReader.NewItem(fillItem)
@@ -72,7 +71,6 @@ func (o *AttrCycleReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
 	if io.EOF == err {
 		err = nil
 	}
-	fillItem.SetEndPos(reader)
 	return
 }
 
@@ -95,7 +93,6 @@ type AttrSizeReader struct {
 }
 
 func (o *AttrSizeReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
-	fillItem.SetStartPos(reader)
 	var sizeItem *Item
 	if sizeItem, err = fillItem.Parent.Expr(o.attr.Size); err != nil {
 		return
@@ -106,11 +103,9 @@ func (o *AttrSizeReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
 		return
 	}
 
-	parser := RawReaderParser{offset: reader.Position()}
+	parser := RawReaderParser{offset: reader.Position(), itemReader: o.itemReader}
 	fillItem.Decode = parser.Decode
 	fillItem.Raw, err = reader.ReadBytes(length)
-	fillItem.SetEndPos(reader)
-
 	return
 }
 

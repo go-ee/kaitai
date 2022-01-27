@@ -22,44 +22,36 @@ func BuildReadU(endianConverter EndianReader, length uint8) (ret ReadTo) {
 
 func BuildReadU1() ReadTo {
 	return func(fillItem *Item, reader *Reader) (err error) {
-		fillItem.SetStartPos(reader)
 		if fillItem.Raw, err = reader.ReadBytes(1); err == nil {
 			fillItem.SetValue(fillItem.Raw[0])
 		}
-		fillItem.SetEndPos(reader)
 		return
 	}
 }
 
 func BuildReadU2(endianConverter EndianReader) ReadTo {
 	return func(fillItem *Item, reader *Reader) (err error) {
-		fillItem.SetStartPos(reader)
 		if fillItem.Raw, err = reader.ReadBytes(2); err == nil {
 			fillItem.SetValue(endianConverter.Uint16(fillItem.Raw))
 		}
-		fillItem.SetEndPos(reader)
 		return
 	}
 }
 
 func BuildReadU4(endianConverter EndianReader) ReadTo {
 	return func(fillItem *Item, reader *Reader) (err error) {
-		fillItem.SetStartPos(reader)
 		if fillItem.Raw, err = reader.ReadBytes(4); err == nil {
 			fillItem.SetValue(endianConverter.Uint32(fillItem.Raw))
 		}
-		fillItem.SetEndPos(reader)
 		return
 	}
 }
 
 func BuildReadU8(endianConverter EndianReader) ReadTo {
 	return func(fillItem *Item, reader *Reader) (err error) {
-		fillItem.SetStartPos(reader)
 		if fillItem.Raw, err = reader.ReadBytes(8); err == nil {
 			fillItem.SetValue(endianConverter.Uint64(fillItem.Raw))
 		}
-		fillItem.SetEndPos(reader)
 		return
 	}
 }

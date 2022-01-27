@@ -91,7 +91,7 @@ func (o *Item) SetValue(value interface{}) {
 
 type Reader struct {
 	io.ReadSeeker
-	lazy   bool
+
 	offset int64
 	buf    [8]byte
 
@@ -140,14 +140,18 @@ func BuildReadAttr(attr *Attr, parse Parse) (ret ReadTo) {
 	return
 }
 
+type Options struct {
+	LazyDecoding bool
+	RawFill      bool
+	PositionFill bool
+}
+
 func BuildReadToFull(parse Parse) (ret ReadTo) {
 	return func(fillItem *Item, reader *Reader) (err error) {
-		fillItem.SetStartPos(reader)
 		var data []byte
 		if data, err = reader.ReadBytesFull(); err == nil {
 			fillItem.value, err = parse(data)
 		}
-		fillItem.SetEndPos(reader)
 		return
 	}
 }
@@ -159,8 +163,6 @@ func BuildReadToLength(length uint16, parse Parse) (ret ReadTo) {
 }
 
 func ReadToLength(fillItem *Item, reader *Reader, length uint16, parse Parse) (err error) {
-	fillItem.SetStartPos(reader)
-
 	var data []byte
 	if length > 0 {
 		data, err = reader.ReadBytes(length)
@@ -171,8 +173,6 @@ func ReadToLength(fillItem *Item, reader *Reader, length uint16, parse Parse) (e
 	if err == nil {
 		fillItem.value, err = parse(data)
 	}
-
-	fillItem.SetEndPos(reader)
 	return
 }
 
@@ -236,4 +236,13 @@ func toUint16(value interface{}) (ret uint16, err error) {
 		ret = uint16(intValue)
 	}
 	return
+}
+
+func BuildReadToPositionWrapper(readTo ReadTo) ReadTo {
+	return func(fillItem *Item, reader *Reader) (err error) {
+		fillItem.SetStartPos(reader)
+		err = readTo(fillItem, reader)
+		fillItem.SetEndPos(reader)
+		return
+	}
 }
