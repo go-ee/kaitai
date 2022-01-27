@@ -10,10 +10,8 @@ import (
 )
 
 type AttrReader interface {
-	Attr() *Attr
-	Accessor() interface{}
-	ReadTo(fillItem *Item, reader *Reader) (err error)
 	NewItem(parent *Item) *Item
+	ReadTo(fillItem *Item, reader *Reader) (err error)
 }
 
 type ReadTo func(fillItem *Item, reader *Reader) (err error)
