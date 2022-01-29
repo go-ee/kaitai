@@ -7,7 +7,7 @@ type TypeSwitch struct {
 	Cases    map[string]*TypeRef `yaml:"cases,omitempty"`
 }
 
-func (o *TypeSwitch) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error) {
+func (o *TypeSwitch) BuildReader(attr *Attr, spec *Spec) (ret Reader, err error) {
 	typeSwitchReader := &TypeSwitchReader{attr: attr, accessor: o, findSwitchValue: o.buildSwitchValueFinder()}
 	if typeSwitchReader.cases, err = o.buildCaseReaders(attr, spec); err != nil {
 		return
@@ -28,10 +28,10 @@ func (o *TypeSwitch) buildSwitchValueFinder() func(attr *Attr, item *Item) (ret 
 	}
 }
 
-func (o *TypeSwitch) buildCaseReaders(attr *Attr, spec *Spec) (ret map[string]AttrReader, err error) {
-	ret = make(map[string]AttrReader, len(o.Cases))
+func (o *TypeSwitch) buildCaseReaders(attr *Attr, spec *Spec) (ret map[string]Reader, err error) {
+	ret = make(map[string]Reader, len(o.Cases))
 	for name, caseItem := range o.Cases {
-		var caseReader AttrReader
+		var caseReader Reader
 		if caseReader, err = caseItem.BuildReader(attr, spec); err != nil {
 			return
 		}
@@ -44,11 +44,11 @@ type TypeSwitchReader struct {
 	attr            *Attr
 	accessor        interface{}
 	findSwitchValue func(attr *Attr, parent *Item) (string, error)
-	cases           map[string]AttrReader
-	defaultCase     AttrReader
+	cases           map[string]Reader
+	defaultCase     Reader
 }
 
-func (o *TypeSwitchReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
+func (o *TypeSwitchReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
 	var switchValue string
 	if switchValue, err = o.findSwitchValue(o.attr, fillItem.Parent); err != nil {
 		return

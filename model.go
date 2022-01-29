@@ -10,7 +10,7 @@ import (
 type Model struct {
 	Root       *Type
 	Spec       *Spec
-	itemReader AttrReader
+	itemReader Reader
 }
 
 func NewModel(ksyPath string, options *Options) (ret *Model, err error) {
@@ -18,18 +18,17 @@ func NewModel(ksyPath string, options *Options) (ret *Model, err error) {
 	if data, err = ioutil.ReadFile(ksyPath); err != nil {
 		return
 	}
-	ret = &Model{Spec: &Spec{}}
-	if err = yaml.Unmarshal(data, ret.Spec); err != nil {
-		return
-	}
 
 	if options == nil {
 		options = &Options{}
 	}
 
-	ret.Spec.Options = options
+	ret = &Model{Spec: &Spec{Options: options}}
+	if err = yaml.Unmarshal(data, ret.Spec); err != nil {
+		return
+	}
 
-	err = ret.crossInit()
+	err = ret.build()
 	return
 }
 
@@ -37,7 +36,7 @@ func (o *Model) Info() string {
 	return fmt.Sprintf("%v", o.Root)
 }
 
-func (o *Model) crossInit() (err error) {
+func (o *Model) build() (err error) {
 	o.Root = &Type{Id: o.Spec.Meta.Id, Seq: o.Spec.Seq, Doc: o.Spec.Doc}
 	if err = o.Spec.crossInit(); err != nil {
 		return
@@ -54,7 +53,7 @@ func (o *Model) Read(filePath string) (ret *Item, err error) {
 	defer file.Close()
 
 	ret = o.itemReader.NewItem(nil)
-	err = o.itemReader.ReadTo(ret, &Reader{ReadSeeker: file})
+	err = o.itemReader.ReadTo(ret, &ReaderIO{ReadSeeker: file})
 	return
 }
 
@@ -113,4 +112,10 @@ func parseEndian(endian string) (ret *bool) {
 		ret = &endianBe
 	}
 	return
+}
+
+type Options struct {
+	LazyDecoding bool
+	RawFill      bool
+	PositionFill bool
 }

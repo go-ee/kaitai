@@ -6,16 +6,16 @@ type Type struct {
 	Doc string  `yaml:"doc,omitempty"`
 }
 
-func (o *Type) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error) {
-	var readers []AttrReader
-	if readers, err = o.buildSeqReaders(spec); err == nil {
-		ret = &TypeReader{attr: attr, accessor: o, readers: readers}
+func (o *Type) BuildReader(attr *Attr, spec *Spec) (ret Reader, err error) {
+	var seqReaders []Reader
+	if seqReaders, err = o.buildSeqReaders(spec); err == nil {
+		ret = WrapReader(&TypeReader{attr: attr, accessor: o, readers: seqReaders}, spec.Options)
 	}
 	return
 }
 
-func (o *Type) buildSeqReaders(spec *Spec) (ret []AttrReader, err error) {
-	readers := make([]AttrReader, len(o.Seq))
+func (o *Type) buildSeqReaders(spec *Spec) (ret []Reader, err error) {
+	readers := make([]Reader, len(o.Seq))
 	for i, attr := range o.Seq {
 		if readers[i], err = attr.BuildReader(spec); err != nil {
 			return
@@ -31,10 +31,10 @@ func (o *Type) buildSeqReaders(spec *Spec) (ret []AttrReader, err error) {
 type TypeReader struct {
 	attr     *Attr
 	accessor interface{}
-	readers  []AttrReader
+	readers  []Reader
 }
 
-func (o *TypeReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
+func (o *TypeReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
 	data := map[string]*Item{}
 	fillItem.SetValue(data)
 	for _, attrReader := range o.readers {

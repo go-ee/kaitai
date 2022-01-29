@@ -12,7 +12,7 @@ type Contents struct {
 	TypeSwitch    *TypeSwitch
 }
 
-func (o *Contents) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error) {
+func (o *Contents) BuildReader(attr *Attr, spec *Spec) (ret Reader, err error) {
 	if o.ContentString != "" {
 		ret = &ContentStringReader{attr: attr, accessor: o, value: o.ContentString, validate: true}
 	} else if o.ContentArray != nil {
@@ -41,7 +41,7 @@ type ContentStringReader struct {
 	value    string
 }
 
-func (o *ContentStringReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
+func (o *ContentStringReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
 	//each character as a byte
 	if fillItem.Raw, err = reader.ReadBytes(uint16(len(o.value))); err == nil {
 		currentValue := string(fillItem.Raw)
@@ -74,7 +74,7 @@ type ContentArrayReader struct {
 	array    []byte
 }
 
-func (o *ContentArrayReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
+func (o *ContentArrayReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
 	//each character as a byte
 	if fillItem.Raw, err = reader.ReadBytes(uint16(len(o.array))); err == nil {
 		if o.validate && bytes.Compare(fillItem.Raw, o.array) != 0 {

@@ -30,15 +30,15 @@ type Attr struct {
 	Encoding    string    `yaml:"encoding,omitempty"`
 }
 
-func (o *Attr) BuildReader(spec *Spec) (ret AttrReader, err error) {
-	var itemReader AttrReader
+func (o *Attr) BuildReader(spec *Spec) (ret Reader, err error) {
+	var itemReader Reader
 
 	if o.Type != nil {
 		itemReader, err = o.Type.BuildReader(o, spec)
 	} else if o.Contents != nil {
 		itemReader, err = o.Contents.BuildReader(o, spec)
 	} else if o.SizeEos == "true" {
-		itemReader = &ReadToReader{attr: o, readTo: BuildReadToFull(ToSame)}
+		itemReader = &AttrAccessorReadToReader{attr: o, readTo: BuildReadToFull(ToSame)}
 	} else {
 		err = fmt.Errorf("read attr: ELSE, not implemented yet")
 	}
@@ -56,10 +56,10 @@ func (o *Attr) BuildReader(spec *Spec) (ret AttrReader, err error) {
 type AttrCycleReader struct {
 	attr       *Attr
 	accessor   interface{}
-	itemReader AttrReader
+	itemReader Reader
 }
 
-func (o *AttrCycleReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
+func (o *AttrCycleReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
 	var items []*Item
 	for i := 0; err == nil; i++ {
 		item := o.itemReader.NewItem(fillItem)
@@ -89,10 +89,10 @@ func (o *AttrCycleReader) NewItem(parent *Item) *Item {
 type AttrSizeReader struct {
 	attr       *Attr
 	accessor   interface{}
-	itemReader AttrReader
+	itemReader Reader
 }
 
-func (o *AttrSizeReader) ReadTo(fillItem *Item, reader *Reader) (err error) {
+func (o *AttrSizeReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
 	var sizeItem *Item
 	if sizeItem, err = fillItem.Parent.Expr(o.attr.Size); err != nil {
 		return
@@ -123,11 +123,11 @@ func (o *AttrSizeReader) NewItem(parent *Item) *Item {
 
 type RawReaderParser struct {
 	offset     int64
-	itemReader AttrReader
+	itemReader Reader
 }
 
 func (o *RawReaderParser) Decode(fillItem *Item) {
-	reader := &Reader{ReadSeeker: bytes.NewReader(fillItem.Raw), offset: o.offset}
+	reader := &ReaderIO{ReadSeeker: bytes.NewReader(fillItem.Raw), offset: o.offset}
 	err := o.itemReader.ReadTo(fillItem, reader)
 	if io.EOF == err {
 		err = nil

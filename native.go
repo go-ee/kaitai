@@ -13,7 +13,7 @@ type Native struct {
 	EndianBe *bool
 }
 
-func (o *Native) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error) {
+func (o *Native) BuildReader(attr *Attr, spec *Spec) (ret Reader, err error) {
 	if o.EndianBe == nil {
 		o.EndianBe = spec.Meta.EndianBe
 	}
@@ -44,7 +44,7 @@ func (o *Native) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error)
 	}
 
 	if readTo != nil {
-		ret = &ReadToReader{attr, o, readTo}
+		ret = WrapReader(&AttrAccessorReadToReader{attr, o, readTo}, spec.Options)
 	}
 	return
 }
@@ -63,7 +63,7 @@ type EndianReader interface {
 	Uint64(data []byte) uint64
 	Float32fromBits(data []byte) float32
 	Float64fromBits(data []byte) float64
-	ReadBitsInt(reader *Reader, n uint8) (ret uint64, err error)
+	ReadBitsInt(reader *ReaderIO, n uint8) (ret uint64, err error)
 }
 
 var BigEndianConverter *bigEndianConverter
@@ -97,7 +97,7 @@ func (o *bigEndianConverter) Float64fromBits(data []byte) float64 {
 	return math.Float64frombits(binary.BigEndian.Uint64(data))
 }
 
-func (o *bigEndianConverter) ReadBitsInt(reader *Reader, n uint8) (ret uint64, err error) {
+func (o *bigEndianConverter) ReadBitsInt(reader *ReaderIO, n uint8) (ret uint64, err error) {
 	bitsNeeded := int(n) - int(reader.bitsLeft)
 	if bitsNeeded > 0 {
 		// 1 bit  => 1 byte
@@ -158,7 +158,7 @@ func (o *littleEndianConverter) Float64fromBits(data []byte) float64 {
 	return math.Float64frombits(binary.LittleEndian.Uint64(data))
 }
 
-func (o *littleEndianConverter) ReadBitsInt(reader *Reader, length uint8) (ret uint64, err error) {
+func (o *littleEndianConverter) ReadBitsInt(reader *ReaderIO, length uint8) (ret uint64, err error) {
 	bitsNeeded := int(length) - int(reader.bitsLeft)
 	var bitsLeft = uint64(reader.bitsLeft)
 	if bitsNeeded > 0 {

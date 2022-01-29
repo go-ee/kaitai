@@ -18,7 +18,7 @@ func main() {
 	flag.Parse()
 	ksyPath := flag.Args()[0]
 
-	model, err := kaitai.NewModel(ksyPath, nil)
+	model, err := kaitai.NewModel(ksyPath, &kaitai.Options{LazyDecoding: true, RawFill: true, PositionFill: true})
 	if err != nil {
 		panic(err)
 	}

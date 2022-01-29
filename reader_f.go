@@ -18,7 +18,7 @@ func BuildReadF(endianConverter EndianReader, length uint8) (ret ReadTo) {
 }
 
 func BuildReadF4(endianConverter EndianReader) ReadTo {
-	return func(fillItem *Item, reader *Reader) (err error) {
+	return func(fillItem *Item, reader *ReaderIO) (err error) {
 		if fillItem.Raw, err = reader.ReadBytes(4); err == nil {
 			fillItem.SetValue(endianConverter.Float32fromBits(fillItem.Raw))
 		}
@@ -27,7 +27,7 @@ func BuildReadF4(endianConverter EndianReader) ReadTo {
 }
 
 func BuildReadF8(endianConverter EndianReader) ReadTo {
-	return func(fillItem *Item, reader *Reader) (err error) {
+	return func(fillItem *Item, reader *ReaderIO) (err error) {
 		if fillItem.Raw, err = reader.ReadBytes(8); err == nil {
 			fillItem.SetValue(endianConverter.Float64fromBits(fillItem.Raw))
 		}

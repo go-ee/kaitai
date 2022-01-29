@@ -13,7 +13,7 @@ func BuildReadB(endianConverter EndianReader, length uint8) (ret ReadTo) {
 }
 
 func BuildReadB1(endianConverter EndianReader) ReadTo {
-	return func(fillItem *Item, reader *Reader) (err error) {
+	return func(fillItem *Item, reader *ReaderIO) (err error) {
 		var value uint64
 		if value, err = endianConverter.ReadBitsInt(reader, 1); err == nil {
 			fillItem.SetValue(value != 0)
@@ -23,7 +23,7 @@ func BuildReadB1(endianConverter EndianReader) ReadTo {
 }
 
 func BuildReadB2(endianConverter EndianReader) ReadTo {
-	return func(fillItem *Item, reader *Reader) (err error) {
+	return func(fillItem *Item, reader *ReaderIO) (err error) {
 		var value uint64
 		if value, err = endianConverter.ReadBitsInt(reader, 2); err == nil {
 			fillItem.SetValue(uint(value))
@@ -33,7 +33,7 @@ func BuildReadB2(endianConverter EndianReader) ReadTo {
 }
 
 func BuildReadBUint64(endianConverter EndianReader, length uint8) ReadTo {
-	return func(fillItem *Item, reader *Reader) (err error) {
+	return func(fillItem *Item, reader *ReaderIO) (err error) {
 		var value uint64
 		if value, err = endianConverter.ReadBitsInt(reader, length); err == nil {
 			fillItem.SetValue(value)
