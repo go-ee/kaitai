@@ -8,7 +8,10 @@ type TypeSwitch struct {
 }
 
 func (o *TypeSwitch) BuildReader(attr *Attr, spec *Spec) (ret Reader, err error) {
-	typeSwitchReader := &TypeSwitchReader{attr: attr, accessor: o, findSwitchValue: o.buildSwitchValueFinder()}
+	typeSwitchReader := &TypeSwitchReader{
+		ReaderBase:      &ReaderBase{attr: attr, accessor: o},
+		findSwitchValue: o.buildSwitchValueFinder(),
+	}
 	if typeSwitchReader.cases, err = o.buildCaseReaders(attr, spec); err != nil {
 		return
 	}
@@ -41,8 +44,7 @@ func (o *TypeSwitch) buildCaseReaders(attr *Attr, spec *Spec) (ret map[string]Re
 }
 
 type TypeSwitchReader struct {
-	attr            *Attr
-	accessor        interface{}
+	*ReaderBase
 	findSwitchValue func(attr *Attr, parent *Item) (string, error)
 	cases           map[string]Reader
 	defaultCase     Reader
@@ -65,16 +67,4 @@ func (o *TypeSwitchReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) 
 		err = fmt.Errorf("no case found for %v, %v", o.attr.Id, switchValue)
 	}
 	return
-}
-
-func (o *TypeSwitchReader) Attr() *Attr {
-	return o.attr
-}
-
-func (o *TypeSwitchReader) Accessor() interface{} {
-	return o.accessor
-}
-
-func (o *TypeSwitchReader) NewItem(parent *Item) *Item {
-	return &Item{Attr: o.attr, Accessor: o.accessor, Parent: parent}
 }

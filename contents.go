@@ -14,9 +14,13 @@ type Contents struct {
 
 func (o *Contents) BuildReader(attr *Attr, spec *Spec) (ret Reader, err error) {
 	if o.ContentString != "" {
-		ret = &ContentStringReader{attr: attr, accessor: o, value: o.ContentString, validate: true}
+		ret = &ContentStringReader{
+			ReaderBase: &ReaderBase{attr: attr, accessor: o}, value: o.ContentString, validate: true,
+		}
 	} else if o.ContentArray != nil {
-		ret = &ContentArrayReader{attr: attr, accessor: o, array: o.ContentArray, validate: true}
+		ret = &ContentArrayReader{
+			ReaderBase: &ReaderBase{attr: attr, accessor: o}, array: o.ContentArray, validate: true,
+		}
 	} else if o.TypeSwitch != nil {
 		ret, err = o.TypeSwitch.BuildReader(attr, spec)
 	} else {
@@ -35,8 +39,7 @@ func (o *Contents) UnmarshalYAML(unmarshal func(interface{}) error) (err error) 
 }
 
 type ContentStringReader struct {
-	attr     *Attr
-	accessor interface{}
+	*ReaderBase
 	validate bool
 	value    string
 }
@@ -55,21 +58,8 @@ func (o *ContentStringReader) ReadTo(fillItem *Item, reader *ReaderIO) (err erro
 	return
 }
 
-func (o *ContentStringReader) Attr() *Attr {
-	return o.attr
-}
-
-func (o *ContentStringReader) Accessor() interface{} {
-	return o.accessor
-}
-
-func (o *ContentStringReader) NewItem(parent *Item) *Item {
-	return &Item{Attr: o.attr, Accessor: o.accessor, Parent: parent}
-}
-
 type ContentArrayReader struct {
-	attr     *Attr
-	accessor interface{}
+	*ReaderBase
 	validate bool
 	array    []byte
 }
@@ -85,16 +75,4 @@ func (o *ContentArrayReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error
 		}
 	}
 	return
-}
-
-func (o *ContentArrayReader) Attr() *Attr {
-	return o.attr
-}
-
-func (o *ContentArrayReader) Accessor() interface{} {
-	return o.accessor
-}
-
-func (o *ContentArrayReader) NewItem(parent *Item) *Item {
-	return &Item{Attr: o.attr, Accessor: o.accessor, Parent: parent}
 }

@@ -38,15 +38,15 @@ func (o *Attr) BuildReader(spec *Spec) (ret Reader, err error) {
 	} else if o.Contents != nil {
 		itemReader, err = o.Contents.BuildReader(o, spec)
 	} else if o.SizeEos == "true" {
-		itemReader = &AttrAccessorReadToReader{attr: o, readTo: BuildReadToFull(ToSame)}
+		itemReader = &AttrAccessorReadToReader{ReaderBase: &ReaderBase{attr: o}, readTo: BuildReadToFull(ToSame)}
 	} else {
 		err = fmt.Errorf("read attr: ELSE, not implemented yet")
 	}
 
 	if o.Repeat == "eos" {
-		ret = &AttrCycleReader{attr: o, itemReader: itemReader}
+		ret = &AttrCycleReader{ReaderBase: &ReaderBase{attr: o, accessor: o}, itemReader: itemReader}
 	} else if o.Size != "" {
-		ret = &AttrSizeReader{attr: o, itemReader: itemReader}
+		ret = &AttrSizeLazyReader{ReaderBase: &ReaderBase{attr: o}, itemReader: itemReader}
 	} else {
 		ret = itemReader
 	}
@@ -54,8 +54,7 @@ func (o *Attr) BuildReader(spec *Spec) (ret Reader, err error) {
 }
 
 type AttrCycleReader struct {
-	attr       *Attr
-	accessor   interface{}
+	*ReaderBase
 	itemReader Reader
 }
 
@@ -74,25 +73,12 @@ func (o *AttrCycleReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
 	return
 }
 
-func (o *AttrCycleReader) Attr() *Attr {
-	return o.attr
-}
-
-func (o *AttrCycleReader) Accessor() interface{} {
-	return o.accessor
-}
-
-func (o *AttrCycleReader) NewItem(parent *Item) *Item {
-	return &Item{Attr: o.attr, Accessor: o.accessor, Parent: parent}
-}
-
-type AttrSizeReader struct {
-	attr       *Attr
-	accessor   interface{}
+type AttrSizeLazyReader struct {
+	*ReaderBase
 	itemReader Reader
 }
 
-func (o *AttrSizeReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
+func (o *AttrSizeLazyReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
 	var sizeItem *Item
 	if sizeItem, err = fillItem.Parent.Expr(o.attr.Size); err != nil {
 		return
@@ -109,18 +95,6 @@ func (o *AttrSizeReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
 	return
 }
 
-func (o *AttrSizeReader) Attr() *Attr {
-	return o.attr
-}
-
-func (o *AttrSizeReader) Accessor() interface{} {
-	return o.accessor
-}
-
-func (o *AttrSizeReader) NewItem(parent *Item) *Item {
-	return &Item{Attr: o.attr, Accessor: o.accessor, Parent: parent}
-}
-
 type RawReaderParser struct {
 	offset     int64
 	itemReader Reader
@@ -129,9 +103,11 @@ type RawReaderParser struct {
 func (o *RawReaderParser) Decode(fillItem *Item) {
 	reader := &ReaderIO{ReadSeeker: bytes.NewReader(fillItem.Raw), offset: o.offset}
 	err := o.itemReader.ReadTo(fillItem, reader)
+
 	if io.EOF == err {
 		err = nil
 	}
+
 	if err != nil {
 		fillItem.Err = err
 	}

@@ -103,6 +103,23 @@ func (o *ReaderIO) Position() (ret int64) {
 	return o.offset + ret
 }
 
+type ReaderBase struct {
+	attr     *Attr
+	accessor interface{}
+}
+
+func (o *ReaderBase) Attr() *Attr {
+	return o.attr
+}
+
+func (o *ReaderBase) Accessor() interface{} {
+	return o.accessor
+}
+
+func (o *ReaderBase) NewItem(parent *Item) *Item {
+	return &Item{Attr: o.attr, Accessor: o.accessor, Parent: parent}
+}
+
 func BuildReadAttr(attr *Attr, parse Parse) (ret ReadTo) {
 	if attr.SizeEos == "true" {
 		ret = BuildReadToFull(parse)

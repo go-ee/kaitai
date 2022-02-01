@@ -3,25 +3,12 @@ package kaitai
 type ReadToWrapper func(readTo ReadTo) ReadTo
 
 type AttrAccessorReadToReader struct {
-	attr     *Attr
-	accessor interface{}
-	readTo   ReadTo
+	*ReaderBase
+	readTo ReadTo
 }
 
 func (o *AttrAccessorReadToReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
 	return o.readTo(fillItem, reader)
-}
-
-func (o *AttrAccessorReadToReader) NewItem(parent *Item) *Item {
-	return &Item{Attr: o.attr, Accessor: o.accessor, Parent: parent}
-}
-
-func (o *AttrAccessorReadToReader) Attr() *Attr {
-	return o.attr
-}
-
-func (o *AttrAccessorReadToReader) Accessor() interface{} {
-	return o.accessor
 }
 
 type ReadToWrapperReader struct {
