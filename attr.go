@@ -46,7 +46,11 @@ func (o *Attr) BuildReader(spec *Spec) (ret Reader, err error) {
 	if o.Repeat == "eos" {
 		ret = &AttrCycleReader{ReaderBase: &ReaderBase{attr: o, accessor: o}, itemReader: itemReader}
 	} else if o.Size != "" {
-		ret = &AttrSizeLazyReader{ReaderBase: &ReaderBase{attr: o}, itemReader: itemReader}
+		if spec.Options.LazyDecoding {
+			ret = &AttrSizeLazyReader{ReaderBase: &ReaderBase{attr: o}, itemReader: itemReader}
+		} else {
+			ret = &AttrSizeReader{ReaderBase: &ReaderBase{attr: o}, itemReader: itemReader}
+		}
 	} else {
 		ret = itemReader
 	}
@@ -66,6 +70,36 @@ func (o *AttrCycleReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
 		fillItem.SetValue(items)
 		err = o.itemReader.ReadTo(item, reader)
 	}
+
+	if io.EOF == err {
+		err = nil
+	}
+	return
+}
+
+type AttrSizeReader struct {
+	*ReaderBase
+	itemReader Reader
+}
+
+func (o *AttrSizeReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
+	var sizeItem *Item
+	if sizeItem, err = fillItem.Parent.Expr(o.attr.Size); err != nil {
+		return
+	}
+
+	var length uint16
+	if length, err = toUint16(sizeItem.Value()); err != nil {
+		return
+	}
+
+	var data []byte
+	if data, err = reader.ReadBytes(length); err != nil {
+		return
+	}
+
+	childReader := &ReaderIO{ReadSeeker: bytes.NewReader(data), offset: reader.Position()}
+	err = o.itemReader.ReadTo(fillItem, childReader)
 
 	if io.EOF == err {
 		err = nil

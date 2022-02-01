@@ -7,6 +7,10 @@ import (
 	"regexp"
 )
 
+type BuildReader interface {
+	BuildRead(length uint8) (ret ReadTo)
+}
+
 type Native struct {
 	Type     string
 	Length   uint8
@@ -17,30 +21,44 @@ func (o *Native) BuildReader(attr *Attr, spec *Spec) (ret Reader, err error) {
 	if o.EndianBe == nil {
 		o.EndianBe = spec.Meta.EndianBe
 	}
-	var endianConverter EndianReader
-	if *o.EndianBe {
-		endianConverter = BigEndianConverter
-	} else {
-		endianConverter = LittleEndianConverter
-	}
-
 	var readTo ReadTo
 
-	switch o.Type {
-	case "str":
+	if o.Type == "str" || o.Type == "strz" {
 		readTo = BuildReadAttr(attr, ToString)
-	case "strz":
-		readTo = BuildReadAttr(attr, ToString)
-	case "b":
-		readTo = BuildReadB(endianConverter, o.Length)
-	case "u":
-		readTo = BuildReadU(endianConverter, o.Length)
-	case "s":
-		readTo = BuildReadS(endianConverter, o.Length)
-	case "f":
-		readTo = BuildReadF(endianConverter, o.Length)
-	default:
-		err = fmt.Errorf("not supported Native(%v,%v)", o.Type, o.Length)
+	} else {
+		var buildReader BuildReader
+		if *o.EndianBe {
+
+			switch o.Type {
+			case "b":
+				buildReader = BigEndianLazyBuildReadB
+			case "u":
+				buildReader = BigEndianLazyBuildReadU
+			case "s":
+				buildReader = BigEndianLazyBuildReadS
+			case "f":
+				buildReader = BigEndianLazyBuildReadF
+			default:
+				err = fmt.Errorf("not supported Native(%v,%v)", o.Type, o.Length)
+			}
+		} else {
+			switch o.Type {
+			case "b":
+				buildReader = LittleEndianLazyBuildReadB
+			case "u":
+				buildReader = LittleEndianBuildLazyReadU
+			case "s":
+				buildReader = LittleEndianBuildLazyReadS
+			case "f":
+				buildReader = LittleEndianBuildLazyReadF
+			default:
+				err = fmt.Errorf("not supported Native(%v,%v)", o.Type, o.Length)
+			}
+		}
+
+		if err == nil {
+			readTo = buildReader.BuildRead(o.Length)
+		}
 	}
 
 	if readTo != nil {

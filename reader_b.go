@@ -1,41 +1,48 @@
 package kaitai
 
-func BuildReadB(endianConverter EndianReader, length uint8) (ret ReadTo) {
+var BigEndianLazyBuildReadB = &EndianLazyBuildReadB{BigEndianConverter}
+var LittleEndianLazyBuildReadB = &EndianLazyBuildReadB{LittleEndianConverter}
+
+type EndianLazyBuildReadB struct {
+	endianConverter EndianReader
+}
+
+func (o *EndianLazyBuildReadB) BuildRead(length uint8) (ret ReadTo) {
 	switch length {
 	case 1:
-		ret = BuildReadB1(endianConverter)
+		ret = o.BuildRead1()
 	case 2:
-		ret = BuildReadB2(endianConverter)
+		ret = o.BuildRead2()
 	default:
-		ret = BuildReadBUint64(endianConverter, length)
+		ret = o.BuildReadUint64(length)
 	}
 	return
 }
 
-func BuildReadB1(endianConverter EndianReader) ReadTo {
+func (o *EndianLazyBuildReadB) BuildRead1() ReadTo {
 	return func(fillItem *Item, reader *ReaderIO) (err error) {
 		var value uint64
-		if value, err = endianConverter.ReadBitsInt(reader, 1); err == nil {
+		if value, err = o.endianConverter.ReadBitsInt(reader, 1); err == nil {
 			fillItem.SetValue(value != 0)
 		}
 		return
 	}
 }
 
-func BuildReadB2(endianConverter EndianReader) ReadTo {
+func (o *EndianLazyBuildReadB) BuildRead2() ReadTo {
 	return func(fillItem *Item, reader *ReaderIO) (err error) {
 		var value uint64
-		if value, err = endianConverter.ReadBitsInt(reader, 2); err == nil {
+		if value, err = o.endianConverter.ReadBitsInt(reader, 2); err == nil {
 			fillItem.SetValue(uint(value))
 		}
 		return
 	}
 }
 
-func BuildReadBUint64(endianConverter EndianReader, length uint8) ReadTo {
+func (o *EndianLazyBuildReadB) BuildReadUint64(length uint8) ReadTo {
 	return func(fillItem *Item, reader *ReaderIO) (err error) {
 		var value uint64
-		if value, err = endianConverter.ReadBitsInt(reader, length); err == nil {
+		if value, err = o.endianConverter.ReadBitsInt(reader, length); err == nil {
 			fillItem.SetValue(value)
 		}
 		return
