@@ -116,6 +116,5 @@ func parseEndian(endian string) (ret *bool) {
 
 type Options struct {
 	LazyDecoding bool
-	RawFill      bool
 	PositionFill bool
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"strconv"
 	"strings"
 )
 
@@ -118,70 +117,4 @@ func (o *ReaderBase) Accessor() interface{} {
 
 func (o *ReaderBase) NewItem(parent *Item) *Item {
 	return &Item{Attr: o.attr, Accessor: o.accessor, Parent: parent}
-}
-
-func BuildReadAttr(attr *Attr, parse Parse) (ret ReadTo) {
-	if attr.SizeEos == "true" {
-		ret = BuildReadToFull(parse)
-	} else if attr.Size != "" {
-		if length, err := strconv.Atoi(attr.Size); err == nil {
-			ret = BuildReadToLength(uint16(length), parse)
-		} else {
-			ret = BuildReadToLengthExpr(attr.Size, parse)
-		}
-	}
-	return
-}
-
-func BuildReadToFull(parse Parse) (ret ReadTo) {
-	return func(fillItem *Item, reader *ReaderIO) (err error) {
-		var data []byte
-		if data, err = reader.ReadBytesFull(); err == nil {
-			fillItem.value, err = parse(data)
-		}
-		return
-	}
-}
-
-func BuildReadToLength(length uint16, parse Parse) (ret ReadTo) {
-	return func(fillItem *Item, reader *ReaderIO) (err error) {
-		return ReadToLength(fillItem, reader, length, parse)
-	}
-}
-
-func ReadToLength(fillItem *Item, reader *ReaderIO, length uint16, parse Parse) (err error) {
-	var data []byte
-	if length > 0 {
-		data, err = reader.ReadBytes(length)
-	} else {
-		data, err = reader.ReadBytesFull()
-	}
-
-	if err == nil {
-		fillItem.value, err = parse(data)
-	}
-	return
-}
-
-func BuildReadToLengthExpr(expr string, parse Parse) (ret ReadTo) {
-	return func(fillItem *Item, reader *ReaderIO) (err error) {
-		var sizeItem *Item
-		if sizeItem, err = fillItem.Parent.Expr(expr); err == nil {
-			var length uint16
-			if length, err = toUint16(sizeItem.Value()); err == nil {
-				return ReadToLength(fillItem, reader, length, parse)
-			} else {
-				err = fmt.Errorf("cant parse Size to uint16, expr=%v, valiue=%v, %v", expr, sizeItem.Value(), err)
-			}
-		}
-		return
-	}
-}
-
-func ToString(data []byte) (interface{}, error) {
-	return string(data), nil
-}
-
-func ToSame(data []byte) (interface{}, error) {
-	return data, nil
 }

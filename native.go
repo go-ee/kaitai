@@ -23,28 +23,84 @@ func (o *Native) BuildReader(attr *Attr, spec *Spec) (ret Reader, err error) {
 	}
 	var readTo ReadTo
 
+	if spec.Options.LazyDecoding {
+		//slower
+		//readTo, err = o.buildLazyReader(attr)
+		readTo, err = o.buildReader(attr)
+	} else {
+		readTo, err = o.buildReader(attr)
+	}
+
+	if readTo != nil {
+		ret = WrapReader(&AttrAccessorReadToReader{
+			&ReaderBase{attr: attr, accessor: o}, readTo,
+		}, spec.Options)
+	}
+	return
+}
+
+func (o *Native) buildReader(attr *Attr) (ret ReadTo, err error) {
 	if o.Type == "str" || o.Type == "strz" {
-		readTo = BuildReadAttr(attr, ToString)
+		ret = BuildReadAttr(attr, ToString)
 	} else {
 		var buildReader BuildReader
 		if *o.EndianBe {
-
 			switch o.Type {
 			case "b":
-				buildReader = BigEndianLazyBuildReadB
+				buildReader = BigEndianBuildReadB
 			case "u":
-				buildReader = BigEndianLazyBuildReadU
+				buildReader = BigEndianBuildReadU
 			case "s":
-				buildReader = BigEndianLazyBuildReadS
+				buildReader = BigEndianBuildReadS
 			case "f":
-				buildReader = BigEndianLazyBuildReadF
+				buildReader = BigEndianBuildReadF
 			default:
 				err = fmt.Errorf("not supported Native(%v,%v)", o.Type, o.Length)
 			}
 		} else {
 			switch o.Type {
 			case "b":
-				buildReader = LittleEndianLazyBuildReadB
+				buildReader = LittleEndianBuildReadB
+			case "u":
+				buildReader = LittleEndianBuildReadU
+			case "s":
+				buildReader = LittleEndianBuildReadS
+			case "f":
+				buildReader = LittleEndianBuildReadF
+			default:
+				err = fmt.Errorf("not supported Native(%v,%v)", o.Type, o.Length)
+			}
+		}
+
+		if err == nil {
+			ret = buildReader.BuildRead(o.Length)
+		}
+	}
+	return
+}
+
+func (o *Native) buildLazyReader(attr *Attr) (ret ReadTo, err error) {
+	if o.Type == "str" || o.Type == "strz" {
+		ret = BuildLazyReadAttr(attr, DecodeToString)
+	} else {
+		var buildReader BuildReader
+		if *o.EndianBe {
+			switch o.Type {
+			case "b":
+				buildReader = BigEndianBuildReadB
+			case "u":
+				buildReader = BigEndianBuildLazyReadU
+			case "s":
+				buildReader = BigEndianBuildLazyReadS
+			case "f":
+				buildReader = BigEndianBuildLazyReadF
+			default:
+				err = fmt.Errorf("not supported Native(%v,%v)", o.Type, o.Length)
+			}
+		} else {
+			switch o.Type {
+			case "b":
+				buildReader = LittleEndianBuildReadB
 			case "u":
 				buildReader = LittleEndianBuildLazyReadU
 			case "s":
@@ -57,14 +113,8 @@ func (o *Native) BuildReader(attr *Attr, spec *Spec) (ret Reader, err error) {
 		}
 
 		if err == nil {
-			readTo = buildReader.BuildRead(o.Length)
+			ret = buildReader.BuildRead(o.Length)
 		}
-	}
-
-	if readTo != nil {
-		ret = WrapReader(&AttrAccessorReadToReader{
-			&ReaderBase{attr: attr, accessor: o}, readTo,
-		}, spec.Options)
 	}
 	return
 }
