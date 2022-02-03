@@ -89,7 +89,7 @@ func (o *AttrSizeReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
 	}
 
 	var length uint16
-	if length, err = toUint16(sizeItem.Value()); err != nil {
+	if length, err = ToUint16(sizeItem.Value()); err != nil {
 		return
 	}
 
@@ -119,7 +119,7 @@ func (o *AttrSizeLazyReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error
 	}
 
 	var length uint16
-	if length, err = toUint16(sizeItem.Value()); err != nil {
+	if length, err = ToUint16(sizeItem.Value()); err != nil {
 		return
 	}
 

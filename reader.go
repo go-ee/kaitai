@@ -21,8 +21,8 @@ type Item struct {
 	value    interface{}
 	Err      error
 	Parent   *Item
-	StartPos int64
-	EndPos   int64
+	StartPos *int64
+	EndPos   *int64
 	Raw      []byte
 	Attr     *Attr
 	Accessor interface{}
@@ -53,11 +53,13 @@ func (o *Item) Expr(expr string) (ret *Item, err error) {
 }
 
 func (o *Item) SetStartPos(reader *ReaderIO) {
-	o.StartPos = reader.Position()
+	pos := reader.Position()
+	o.StartPos = &pos
 }
 
 func (o *Item) SetEndPos(reader *ReaderIO) {
-	o.EndPos = reader.Position()
+	pos := reader.Position()
+	o.EndPos = &pos
 }
 
 func (o *Item) SetValue(value interface{}) {

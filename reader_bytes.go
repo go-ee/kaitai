@@ -51,7 +51,7 @@ func BuildReadToLengthExpr(expr string, parse Parse) (ret ReadTo) {
 		var sizeItem *Item
 		if sizeItem, err = fillItem.Parent.Expr(expr); err == nil {
 			var length uint16
-			if length, err = toUint16(sizeItem.Value()); err == nil {
+			if length, err = ToUint16(sizeItem.Value()); err == nil {
 				return ReadToLength(fillItem, reader, length, parse)
 			} else {
 				err = fmt.Errorf("cant parse Size to uint16, expr=%v, valiue=%v, %v", expr, sizeItem.Value(), err)
@@ -115,7 +115,7 @@ func BuildLazyReadToLengthExpr(expr string, decode Decode) (ret ReadTo) {
 		var sizeItem *Item
 		if sizeItem, err = fillItem.Parent.Expr(expr); err == nil {
 			var length uint16
-			if length, err = toUint16(sizeItem.Value()); err == nil {
+			if length, err = ToUint16(sizeItem.Value()); err == nil {
 				return LazyReadToLength(fillItem, reader, length, decode)
 			} else {
 				err = fmt.Errorf("cant decode Size to uint16, expr=%v, valiue=%v, %v", expr, sizeItem.Value(), err)

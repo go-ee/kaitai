@@ -3,9 +3,16 @@ package kaitai
 import (
 	"fmt"
 	"strconv"
+	"strings"
+	"time"
 )
 
-func toUint16(value interface{}) (ret uint16, err error) {
+const (
+	day  = time.Minute * 60 * 24
+	year = 365 * day
+)
+
+func ToUint16(value interface{}) (ret uint16, err error) {
 	if number, ok := value.(int); ok {
 		ret = uint16(number)
 		return
@@ -42,4 +49,23 @@ func toUint16(value interface{}) (ret uint16, err error) {
 		ret = uint16(intValue)
 	}
 	return
+}
+
+func DurationToString(d time.Duration) string {
+	if d < day {
+		return d.String()
+	}
+
+	var b strings.Builder
+	if d >= year {
+		years := d / year
+		fmt.Fprintf(&b, "%dy", years)
+		d -= years * year
+	}
+
+	days := d / day
+	d -= days * day
+	fmt.Fprintf(&b, "%dd%s", days, d)
+
+	return b.String()
 }
