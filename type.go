@@ -36,7 +36,7 @@ type TypeReader struct {
 }
 
 func (o *TypeReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
-	data := map[string]*Item{}
+	data := map[string]interface{}{}
 	fillItem.SetValue(data)
 	for _, attrReader := range o.readers {
 		item := attrReader.NewItem(fillItem)
