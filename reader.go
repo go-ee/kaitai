@@ -13,6 +13,12 @@ type Reader interface {
 	ReadTo(fillItem *Item, reader *ReaderIO) (err error)
 }
 
+type NativeReader interface {
+	Read(parent *Item, reader *ReaderIO) (ret interface{}, err error)
+}
+
+type Read func(reader *ReaderIO) (ret interface{}, err error)
+type ParentRead func(parent *Item, reader *ReaderIO) (ret interface{}, err error)
 type ReadTo func(fillItem *Item, reader *ReaderIO) (err error)
 type Parse func(data []byte) (interface{}, error)
 type Decode func(fillItem *Item)
@@ -36,10 +42,23 @@ func (o *Item) Value() interface{} {
 	return o.value
 }
 
-func (o *Item) Expr(expr string) (ret *Item, err error) {
+func (o *Item) ExprValue(expr string) (ret interface{}, err error) {
+	if ret, err = o.Expr(expr); err == nil {
+		if item, ok := ret.(*Item); ok {
+			ret = item.Value()
+		}
+	}
+	return
+}
+
+func (o *Item) Expr(expr string) (ret interface{}, err error) {
 	ret = o
 	for _, part := range strings.Split(expr, ".") {
-		if value, ok := ret.Value().(map[string]*Item); ok {
+		if item, ok := ret.(*Item); ok {
+			ret = item.Value()
+		}
+
+		if value, ok := ret.(map[string]interface{}); ok {
 			if ret = value[part]; ret == nil {
 				err = fmt.Errorf("can't resolve '%v' of expression '%v'", part, expr)
 				break

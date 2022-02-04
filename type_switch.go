@@ -22,11 +22,11 @@ func (o *TypeSwitch) BuildReader(attr *Attr, spec *Spec) (ret Reader, err error)
 
 func (o *TypeSwitch) buildSwitchValueFinder() func(attr *Attr, item *Item) (ret string, err error) {
 	return func(attr *Attr, parent *Item) (ret string, err error) {
-		var switchOnValue *Item
-		if switchOnValue, err = parent.Expr(o.SwitchOn); err != nil {
+		var switchOnValue interface{}
+		if switchOnValue, err = parent.ExprValue(o.SwitchOn); err != nil {
 			return
 		}
-		ret = fmt.Sprintf("%v", switchOnValue.Value())
+		ret = fmt.Sprintf("%v", switchOnValue)
 		return
 	}
 }

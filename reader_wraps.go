@@ -45,3 +45,29 @@ func WrapReader(reader Reader, options *Options) (ret Reader) {
 	}
 	return ret
 }
+
+func ReadToParentRead(read Read) ParentRead {
+	return func(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
+		return read(reader)
+	}
+}
+
+func ReadToReadTo(read Read) ReadTo {
+	return func(fillItem *Item, reader *ReaderIO) (err error) {
+		var item interface{}
+		if item, err = read(reader); err == nil {
+			fillItem.SetValue(item)
+		}
+		return
+	}
+}
+
+func ParentReadToReadTo(read ParentRead) ReadTo {
+	return func(fillItem *Item, reader *ReaderIO) (err error) {
+		var item interface{}
+		if item, err = read(fillItem.Parent, reader); err == nil {
+			fillItem.SetValue(item)
+		}
+		return
+	}
+}

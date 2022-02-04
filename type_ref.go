@@ -17,7 +17,10 @@ type TypeRef struct {
 
 func (o *TypeRef) BuildReader(attr *Attr, spec *Spec) (ret Reader, err error) {
 	if o.Native != nil {
-		ret, err = o.Native.BuildReader(attr, spec)
+		var parentRead ParentRead
+		if parentRead, err = o.Native.BuildReader(attr, spec); err == nil {
+			ret = &AttrAccessorReadToReader{&ReaderBase{attr: attr}, ParentReadToReadTo(parentRead)}
+		}
 	} else if o.TypeSwitch != nil {
 		ret, err = o.TypeSwitch.BuildReader(attr, spec)
 	} else {

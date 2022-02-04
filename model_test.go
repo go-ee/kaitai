@@ -19,10 +19,13 @@ func toJson() {
 }
 
 func pintRecordsLen(item *Item) {
-	m := item.Value().(map[string]*Item)
-	recordsItem := m["records"]
-	records := recordsItem.Value().([]*Item)
-	println(len(records))
+	recordsValue, _ := item.ExprValue("records")
+
+	if records, ok := recordsValue.([]interface{}); ok {
+		println(len(records))
+	} else {
+		println(recordsValue)
+	}
 }
 
 func item() (ret *Item) {

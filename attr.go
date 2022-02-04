@@ -38,7 +38,10 @@ func (o *Attr) BuildReader(spec *Spec) (ret Reader, err error) {
 	} else if o.Contents != nil {
 		itemReader, err = o.Contents.BuildReader(o, spec)
 	} else if o.SizeEos == "true" {
-		itemReader = &AttrAccessorReadToReader{ReaderBase: &ReaderBase{attr: o}, readTo: BuildReadToFull(ToSame)}
+		itemReader = &AttrAccessorReadToReader{
+			ReaderBase: &ReaderBase{attr: o},
+			readTo:     ReadToReadTo(BuildReadToFull(ToSame)),
+		}
 	} else {
 		err = fmt.Errorf("read attr: ELSE, not implemented yet")
 	}
@@ -83,13 +86,17 @@ type AttrSizeReader struct {
 }
 
 func (o *AttrSizeReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
-	var sizeItem *Item
-	if sizeItem, err = fillItem.Parent.Expr(o.attr.Size); err != nil {
+	var size interface{}
+	if size, err = fillItem.Parent.Expr(o.attr.Size); err != nil {
 		return
 	}
 
+	if item, ok := size.(*Item); ok {
+		size = item.Value()
+	}
+
 	var length uint16
-	if length, err = ToUint16(sizeItem.Value()); err != nil {
+	if length, err = ToUint16(size); err != nil {
 		return
 	}
 
@@ -113,13 +120,17 @@ type AttrSizeLazyReader struct {
 }
 
 func (o *AttrSizeLazyReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
-	var sizeItem *Item
-	if sizeItem, err = fillItem.Parent.Expr(o.attr.Size); err != nil {
+	var size interface{}
+	if size, err = fillItem.Parent.Expr(o.attr.Size); err != nil {
 		return
 	}
 
+	if item, ok := size.(*Item); ok {
+		size = item.Value()
+	}
+
 	var length uint16
-	if length, err = ToUint16(sizeItem.Value()); err != nil {
+	if length, err = ToUint16(size); err != nil {
 		return
 	}
 
