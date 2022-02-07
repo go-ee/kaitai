@@ -7,7 +7,7 @@ type Enum struct {
 	Literals map[int]*Literal
 }
 
-func (o *Enum) BuildReader(attr *Attr, spec *Spec) (ret Reader, err error) {
+func (o *Enum) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error) {
 	err = fmt.Errorf("read %v.Enum(%v) not implemented yet", attr.Id, o.Id)
 	return
 }

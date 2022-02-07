@@ -6,18 +6,16 @@ type Type struct {
 	Doc string  `yaml:"doc,omitempty"`
 }
 
-func (o *Type) BuildReader(attr *Attr, spec *Spec) (ret Reader, err error) {
-	var seqReaders []Reader
+func (o *Type) BuildReader(attr *Attr, spec *Spec) (ret *TypeReader, err error) {
+	var seqReaders []AttrReader
 	if seqReaders, err = o.buildSeqReaders(spec); err == nil {
-		ret = WrapReader(&TypeReader{
-			ReaderBase: &ReaderBase{attr: attr, accessor: o}, readers: seqReaders,
-		}, spec.Options)
+		ret = &TypeReader{o, attr, seqReaders}
 	}
 	return
 }
 
-func (o *Type) buildSeqReaders(spec *Spec) (ret []Reader, err error) {
-	readers := make([]Reader, len(o.Seq))
+func (o *Type) buildSeqReaders(spec *Spec) (ret []AttrReader, err error) {
+	readers := make([]AttrReader, len(o.Seq))
 	for i, attr := range o.Seq {
 		if readers[i], err = attr.BuildReader(spec); err != nil {
 			return
@@ -31,19 +29,29 @@ func (o *Type) buildSeqReaders(spec *Spec) (ret []Reader, err error) {
 }
 
 type TypeReader struct {
-	*ReaderBase
-	readers []Reader
+	*Type
+	attr    *Attr
+	readers []AttrReader
 }
 
-func (o *TypeReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
+func (o *TypeReader) Read(_ *Item, reader *ReaderIO) (ret interface{}, err error) {
 	data := map[string]interface{}{}
-	fillItem.SetValue(data)
+	item := &Item{value: data, Type: o.Type}
 	for _, attrReader := range o.readers {
-		item := attrReader.NewItem(fillItem)
-		data[item.Attr.Id] = item
-		if err = attrReader.ReadTo(item, reader); err != nil {
+		if attrValue, attrErr := attrReader.Read(item, reader); attrErr == nil {
+			data[attrReader.Attr().Id] = attrValue
+		} else {
+			err = attrErr
 			break
 		}
 	}
+
+	if err == nil {
+		ret = item
+	}
 	return
+}
+
+func (o TypeReader) Attr() *Attr {
+	return o.attr
 }

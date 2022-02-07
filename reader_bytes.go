@@ -5,14 +5,14 @@ import (
 	"strconv"
 )
 
-func BuildReadAttr(attr *Attr, parse Parse) (ret ParentRead) {
+func BuildReadAttr(attr *Attr, parse Parse) (ret AttrReader) {
 	if attr.SizeEos == "true" {
-		ret = ReadToParentRead(BuildReadToFull(parse))
+		ret = &AttrParentRead{attr, ReadToParentRead(BuildReadToFull(parse))}
 	} else if attr.Size != "" {
 		if length, err := strconv.Atoi(attr.Size); err == nil {
-			ret = ReadToParentRead(BuildReadToLength(uint16(length), parse))
+			ret = &AttrParentRead{attr, ReadToParentRead(BuildReadToLength(uint16(length), parse))}
 		} else {
-			ret = BuildReadToLengthExpr(attr.Size, parse)
+			ret = &AttrParentRead{attr, BuildReadToLengthExpr(attr.Size, parse)}
 		}
 	}
 	return

@@ -10,7 +10,7 @@ import (
 type Model struct {
 	Root       *Type
 	Spec       *Spec
-	itemReader Reader
+	itemReader *TypeReader
 }
 
 func NewModel(ksyPath string, options *Options) (ret *Model, err error) {
@@ -52,8 +52,10 @@ func (o *Model) Read(filePath string) (ret *Item, err error) {
 	}
 	defer file.Close()
 
-	ret = o.itemReader.NewItem(nil)
-	err = o.itemReader.ReadTo(ret, &ReaderIO{ReadSeeker: file})
+	var item interface{}
+	if item, err = o.itemReader.Read(nil, &ReaderIO{ReadSeeker: file}); err == nil {
+		ret = item.(*Item)
+	}
 	return
 }
 

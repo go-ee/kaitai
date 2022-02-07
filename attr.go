@@ -30,29 +30,26 @@ type Attr struct {
 	Encoding    string    `yaml:"encoding,omitempty"`
 }
 
-func (o *Attr) BuildReader(spec *Spec) (ret Reader, err error) {
-	var itemReader Reader
+func (o *Attr) BuildReader(spec *Spec) (ret AttrReader, err error) {
+	var itemReader AttrReader
 
 	if o.Type != nil {
 		itemReader, err = o.Type.BuildReader(o, spec)
 	} else if o.Contents != nil {
 		itemReader, err = o.Contents.BuildReader(o, spec)
 	} else if o.SizeEos == "true" {
-		itemReader = &AttrAccessorReadToReader{
-			ReaderBase: &ReaderBase{attr: o},
-			readTo:     ReadToReadTo(BuildReadToFull(ToSame)),
-		}
+		itemReader = &AttrParentRead{attr: o, parentRead: ReadToParentRead(BuildReadToFull(ToSame))}
 	} else {
 		err = fmt.Errorf("read attr: ELSE, not implemented yet")
 	}
 
 	if o.Repeat == "eos" {
-		ret = &AttrCycleReader{ReaderBase: &ReaderBase{attr: o, accessor: o}, itemReader: itemReader}
+		ret = &AttrCycleReader{attr: o, itemReader: itemReader}
 	} else if o.Size != "" {
 		if spec.Options.LazyDecoding {
-			ret = &AttrSizeLazyReader{ReaderBase: &ReaderBase{attr: o}, itemReader: itemReader}
+			ret = &AttrSizeLazyReader{attr: o, itemReader: itemReader}
 		} else {
-			ret = &AttrSizeReader{ReaderBase: &ReaderBase{attr: o}, itemReader: itemReader}
+			ret = &AttrSizeReader{attr: o, itemReader: itemReader}
 		}
 	} else {
 		ret = itemReader
@@ -61,33 +58,46 @@ func (o *Attr) BuildReader(spec *Spec) (ret Reader, err error) {
 }
 
 type AttrCycleReader struct {
-	*ReaderBase
-	itemReader Reader
+	attr       *Attr
+	itemReader AttrReader
 }
 
-func (o *AttrCycleReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
-	var items []*Item
+func (o *AttrCycleReader) Attr() *Attr {
+	return o.attr
+}
+
+func (o *AttrCycleReader) Read(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
+	var items []interface{}
 	for i := 0; err == nil; i++ {
-		item := o.itemReader.NewItem(fillItem)
+		var item interface{}
+		if item, err = o.itemReader.Read(parent, reader); err != nil {
+			break
+		}
 		items = append(items, item)
-		fillItem.SetValue(items)
-		err = o.itemReader.ReadTo(item, reader)
 	}
 
 	if io.EOF == err {
 		err = nil
 	}
+
+	if err == nil {
+		ret = items
+	}
 	return
 }
 
 type AttrSizeReader struct {
-	*ReaderBase
-	itemReader Reader
+	attr       *Attr
+	itemReader AttrReader
 }
 
-func (o *AttrSizeReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
+func (o *AttrSizeReader) Attr() *Attr {
+	return o.attr
+}
+
+func (o *AttrSizeReader) Read(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
 	var size interface{}
-	if size, err = fillItem.Parent.Expr(o.attr.Size); err != nil {
+	if size, err = parent.Expr(o.attr.Size); err != nil {
 		return
 	}
 
@@ -106,7 +116,7 @@ func (o *AttrSizeReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
 	}
 
 	childReader := &ReaderIO{ReadSeeker: bytes.NewReader(data), offset: reader.Position()}
-	err = o.itemReader.ReadTo(fillItem, childReader)
+	ret, err = o.itemReader.Read(parent, childReader)
 
 	if io.EOF == err {
 		err = nil
@@ -115,13 +125,17 @@ func (o *AttrSizeReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
 }
 
 type AttrSizeLazyReader struct {
-	*ReaderBase
-	itemReader Reader
+	attr       *Attr
+	itemReader AttrReader
 }
 
-func (o *AttrSizeLazyReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
+func (o *AttrSizeLazyReader) Attr() *Attr {
+	return o.attr
+}
+
+func (o *AttrSizeLazyReader) Read(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
 	var size interface{}
-	if size, err = fillItem.Parent.Expr(o.attr.Size); err != nil {
+	if size, err = parent.Expr(o.attr.Size); err != nil {
 		return
 	}
 
@@ -135,26 +149,22 @@ func (o *AttrSizeLazyReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error
 	}
 
 	parser := RawReaderParser{offset: reader.Position(), itemReader: o.itemReader}
-	fillItem.Decode = parser.Decode
-	fillItem.Raw, err = reader.ReadBytes(length)
+	parent.Decode = parser.Decode
+	parent.Raw, err = reader.ReadBytes(length)
 	return
 }
 
 type RawReaderParser struct {
 	offset     int64
-	itemReader Reader
+	itemReader AttrReader
 }
 
 func (o *RawReaderParser) Decode(fillItem *Item) {
 	reader := &ReaderIO{ReadSeeker: bytes.NewReader(fillItem.Raw), offset: o.offset}
-	err := o.itemReader.ReadTo(fillItem, reader)
+	fillItem.value, fillItem.Err = o.itemReader.Read(fillItem.Parent, reader)
 
-	if io.EOF == err {
-		err = nil
-	}
-
-	if err != nil {
-		fillItem.Err = err
+	if io.EOF == fillItem.Err {
+		fillItem.Err = nil
 	}
 	return
 }

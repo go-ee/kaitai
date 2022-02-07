@@ -12,14 +12,14 @@ type Contents struct {
 	TypeSwitch    *TypeSwitch
 }
 
-func (o *Contents) BuildReader(attr *Attr, spec *Spec) (ret Reader, err error) {
+func (o *Contents) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error) {
 	if o.ContentString != "" {
 		ret = &ContentStringReader{
-			ReaderBase: &ReaderBase{attr: attr, accessor: o}, value: o.ContentString, validate: true,
+			attr: attr, value: o.ContentString, validate: true,
 		}
 	} else if o.ContentArray != nil {
 		ret = &ContentArrayReader{
-			ReaderBase: &ReaderBase{attr: attr, accessor: o}, array: o.ContentArray, validate: true,
+			attr: attr, array: o.ContentArray, validate: true,
 		}
 	} else if o.TypeSwitch != nil {
 		ret, err = o.TypeSwitch.BuildReader(attr, spec)
@@ -39,39 +39,49 @@ func (o *Contents) UnmarshalYAML(unmarshal func(interface{}) error) (err error) 
 }
 
 type ContentStringReader struct {
-	*ReaderBase
+	attr     *Attr
 	validate bool
 	value    string
 }
 
-func (o *ContentStringReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
+func (o *ContentStringReader) Attr() *Attr {
+	return o.attr
+}
+
+func (o *ContentStringReader) Read(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
 	//each character as a byte
-	if fillItem.Raw, err = reader.ReadBytes(uint16(len(o.value))); err == nil {
-		currentValue := string(fillItem.Raw)
+	var data []byte
+	if data, err = reader.ReadBytes(uint16(len(o.value))); err == nil {
+		currentValue := string(data)
 		if o.validate && currentValue != o.value {
 			err = fmt.Errorf("content is different, '%v' != '%v'", currentValue, o.value)
 		}
 		if err == nil {
-			fillItem.SetValue(currentValue)
+			ret = currentValue
 		}
 	}
 	return
 }
 
 type ContentArrayReader struct {
-	*ReaderBase
+	attr     *Attr
 	validate bool
 	array    []byte
 }
 
-func (o *ContentArrayReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
+func (o *ContentArrayReader) Attr() *Attr {
+	return o.attr
+}
+
+func (o *ContentArrayReader) Read(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
 	//each character as a byte
-	if fillItem.Raw, err = reader.ReadBytes(uint16(len(o.array))); err == nil {
-		if o.validate && bytes.Compare(fillItem.Raw, o.array) != 0 {
-			err = fmt.Errorf("content is different, '%v' != '%v'", fillItem.Raw, o.array)
+	var data []byte
+	if data, err = reader.ReadBytes(uint16(len(o.array))); err == nil {
+		if o.validate && bytes.Compare(data, o.array) != 0 {
+			err = fmt.Errorf("content is different, '%v' != '%v'", data, o.array)
 		}
 		if err == nil {
-			fillItem.SetValue(fillItem.Raw)
+			ret = data
 		}
 	}
 	return

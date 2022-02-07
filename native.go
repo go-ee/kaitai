@@ -17,14 +17,14 @@ type Native struct {
 	EndianBe *bool
 }
 
-func (o *Native) BuildReader(attr *Attr, spec *Spec) (ret ParentRead, err error) {
+func (o *Native) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error) {
 	if o.EndianBe == nil {
 		o.EndianBe = spec.Meta.EndianBe
 	}
 	return o.buildReader(attr)
 }
 
-func (o *Native) buildReader(attr *Attr) (ret ParentRead, err error) {
+func (o *Native) buildReader(attr *Attr) (ret AttrReader, err error) {
 	if o.Type == "str" || o.Type == "strz" {
 		ret = BuildReadAttr(attr, ToString)
 	} else {
@@ -58,7 +58,7 @@ func (o *Native) buildReader(attr *Attr) (ret ParentRead, err error) {
 		}
 
 		if err == nil {
-			ret = ReadToParentRead(buildReader.BuildRead(o.Length))
+			ret = &AttrParentRead{attr, ReadToParentRead(buildReader.BuildRead(o.Length))}
 		}
 	}
 	return

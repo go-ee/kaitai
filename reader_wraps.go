@@ -1,45 +1,32 @@
 package kaitai
 
-type ReadToWrapper func(readTo ReadTo) ReadTo
-
-type AttrAccessorReadToReader struct {
-	*ReaderBase
-	readTo ReadTo
+type AttrParentRead struct {
+	attr       *Attr
+	parentRead ParentRead
 }
 
-func (o *AttrAccessorReadToReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
-	return o.readTo(fillItem, reader)
+func (o *AttrParentRead) Read(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
+	return o.parentRead(parent, reader)
 }
 
-type ReadToWrapperReader struct {
-	reader Reader
-	readTo ReadTo
+func (o *AttrParentRead) Attr() *Attr {
+	return o.attr
 }
 
-func NewReadToWrapperReader(reader Reader, readToWrapper ReadToWrapper) *ReadToWrapperReader {
-	return &ReadToWrapperReader{reader: reader, readTo: readToWrapper(reader.ReadTo)}
-}
-
-func (o *ReadToWrapperReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
-	return o.readTo(fillItem, reader)
-}
-
-func (o *ReadToWrapperReader) NewItem(parent *Item) *Item {
-	return o.reader.NewItem(parent)
-}
-
-func ReadToPositionWrapper(readTo ReadTo) ReadTo {
-	return func(fillItem *Item, reader *ReaderIO) (err error) {
-		fillItem.SetStartPos(reader)
-		err = readTo(fillItem, reader)
-		fillItem.SetEndPos(reader)
+func ItemReadToPositionWrapper(itemRead ItemRead) ItemRead {
+	return func(parent *Item, reader *ReaderIO) (ret *Item, err error) {
+		startPos := reader.Position()
+		if ret, err = itemRead(parent, reader); err == nil {
+			ret.StartPos = &startPos
+			ret.SetEndPos(reader)
+		}
 		return
 	}
 }
 
-func WrapReader(reader Reader, options *Options) (ret Reader) {
+func WrapReader(reader ItemRead, options *Options) (ret ItemRead) {
 	if options.PositionFill {
-		ret = NewReadToWrapperReader(reader, ReadToPositionWrapper)
+		//ret = NewReadToWrapperReader(reader, ItemReadToPositionWrapper)
 	} else {
 		ret = reader
 	}
@@ -49,25 +36,5 @@ func WrapReader(reader Reader, options *Options) (ret Reader) {
 func ReadToParentRead(read Read) ParentRead {
 	return func(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
 		return read(reader)
-	}
-}
-
-func ReadToReadTo(read Read) ReadTo {
-	return func(fillItem *Item, reader *ReaderIO) (err error) {
-		var item interface{}
-		if item, err = read(reader); err == nil {
-			fillItem.SetValue(item)
-		}
-		return
-	}
-}
-
-func ParentReadToReadTo(read ParentRead) ReadTo {
-	return func(fillItem *Item, reader *ReaderIO) (err error) {
-		var item interface{}
-		if item, err = read(fillItem.Parent, reader); err == nil {
-			fillItem.SetValue(item)
-		}
-		return
 	}
 }

@@ -15,12 +15,9 @@ type TypeRef struct {
 	Native     *Native     `-`
 }
 
-func (o *TypeRef) BuildReader(attr *Attr, spec *Spec) (ret Reader, err error) {
+func (o *TypeRef) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error) {
 	if o.Native != nil {
-		var parentRead ParentRead
-		if parentRead, err = o.Native.BuildReader(attr, spec); err == nil {
-			ret = &AttrAccessorReadToReader{&ReaderBase{attr: attr}, ParentReadToReadTo(parentRead)}
-		}
+		ret, err = o.Native.BuildReader(attr, spec)
 	} else if o.TypeSwitch != nil {
 		ret, err = o.TypeSwitch.BuildReader(attr, spec)
 	} else {

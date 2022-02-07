@@ -8,9 +8,11 @@ import (
 	"strings"
 )
 
-type Reader interface {
-	NewItem(parent *Item) *Item
-	ReadTo(fillItem *Item, reader *ReaderIO) (err error)
+type ItemRead func(parent *Item, reader *ReaderIO) (ret *Item, err error)
+
+type AttrReader interface {
+	Attr() *Attr
+	Read(parent *Item, reader *ReaderIO) (ret interface{}, err error)
 }
 
 type NativeReader interface {
@@ -19,12 +21,12 @@ type NativeReader interface {
 
 type Read func(reader *ReaderIO) (ret interface{}, err error)
 type ParentRead func(parent *Item, reader *ReaderIO) (ret interface{}, err error)
-type ReadTo func(fillItem *Item, reader *ReaderIO) (err error)
 type Parse func(data []byte) (interface{}, error)
 type Decode func(fillItem *Item)
 
 type Item struct {
 	value    interface{}
+	Type     *Type
 	Err      error
 	Parent   *Item
 	StartPos *int64
@@ -121,21 +123,4 @@ func (o *ReaderIO) ReadBytesAsReader(n uint16) (ret *ReaderIO, raw []byte, err e
 func (o *ReaderIO) Position() (ret int64) {
 	ret, _ = o.Seek(0, io.SeekCurrent)
 	return o.offset + ret
-}
-
-type ReaderBase struct {
-	attr     *Attr
-	accessor interface{}
-}
-
-func (o *ReaderBase) Attr() *Attr {
-	return o.attr
-}
-
-func (o *ReaderBase) Accessor() interface{} {
-	return o.accessor
-}
-
-func (o *ReaderBase) NewItem(parent *Item) *Item {
-	return &Item{Attr: o.attr, Accessor: o.accessor, Parent: parent}
 }

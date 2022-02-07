@@ -7,9 +7,9 @@ type TypeSwitch struct {
 	Cases    map[string]*TypeRef `yaml:"cases,omitempty"`
 }
 
-func (o *TypeSwitch) BuildReader(attr *Attr, spec *Spec) (ret Reader, err error) {
+func (o *TypeSwitch) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error) {
 	typeSwitchReader := &TypeSwitchReader{
-		ReaderBase:      &ReaderBase{attr: attr, accessor: o},
+		attr:            attr,
 		findSwitchValue: o.buildSwitchValueFinder(),
 	}
 	if typeSwitchReader.cases, err = o.buildCaseReaders(attr, spec); err != nil {
@@ -31,10 +31,10 @@ func (o *TypeSwitch) buildSwitchValueFinder() func(attr *Attr, item *Item) (ret 
 	}
 }
 
-func (o *TypeSwitch) buildCaseReaders(attr *Attr, spec *Spec) (ret map[string]Reader, err error) {
-	ret = make(map[string]Reader, len(o.Cases))
+func (o *TypeSwitch) buildCaseReaders(attr *Attr, spec *Spec) (ret map[string]AttrReader, err error) {
+	ret = make(map[string]AttrReader, len(o.Cases))
 	for name, caseItem := range o.Cases {
-		var caseReader Reader
+		var caseReader AttrReader
 		if caseReader, err = caseItem.BuildReader(attr, spec); err != nil {
 			return
 		}
@@ -44,15 +44,19 @@ func (o *TypeSwitch) buildCaseReaders(attr *Attr, spec *Spec) (ret map[string]Re
 }
 
 type TypeSwitchReader struct {
-	*ReaderBase
+	attr            *Attr
 	findSwitchValue func(attr *Attr, parent *Item) (string, error)
-	cases           map[string]Reader
-	defaultCase     Reader
+	cases           map[string]AttrReader
+	defaultCase     AttrReader
 }
 
-func (o *TypeSwitchReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) {
+func (o *TypeSwitchReader) Attr() *Attr {
+	return o.attr
+}
+
+func (o *TypeSwitchReader) Read(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
 	var switchValue string
-	if switchValue, err = o.findSwitchValue(o.attr, fillItem.Parent); err != nil {
+	if switchValue, err = o.findSwitchValue(o.attr, parent); err != nil {
 		return
 	}
 
@@ -62,7 +66,7 @@ func (o *TypeSwitchReader) ReadTo(fillItem *Item, reader *ReaderIO) (err error) 
 	}
 
 	if itemReader != nil {
-		err = itemReader.ReadTo(fillItem, reader)
+		ret, err = itemReader.Read(parent, reader)
 	} else {
 		err = fmt.Errorf("no case found for %v, %v", o.attr.Id, switchValue)
 	}
