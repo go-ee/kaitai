@@ -110,12 +110,14 @@ func (o *AttrSizeReader) Read(parent *Item, reader *ReaderIO) (ret interface{}, 
 		return
 	}
 
+	offset := reader.Position()
+
 	var data []byte
 	if data, err = reader.ReadBytes(length); err != nil {
 		return
 	}
 
-	childReader := &ReaderIO{ReadSeeker: bytes.NewReader(data), offset: reader.Position()}
+	childReader := &ReaderIO{ReadSeeker: bytes.NewReader(data), offset: offset}
 	ret, err = o.itemReader.Read(parent, childReader)
 
 	if io.EOF == err {

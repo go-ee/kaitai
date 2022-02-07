@@ -118,5 +118,6 @@ func (o *ReaderIO) ReadBytesAsReader(n uint16) (ret *ReaderIO, raw []byte, err e
 
 func (o *ReaderIO) Position() (ret int64) {
 	ret, _ = o.Seek(0, io.SeekCurrent)
-	return o.offset + ret
+	ret = o.offset + ret
+	return
 }
