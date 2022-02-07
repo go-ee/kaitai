@@ -18,11 +18,16 @@ func toJson() {
 	pintRecordsLen(it)
 }
 
-func pintRecordsLen(item *Item) {
-	recordsValue, _ := item.ExprValue("records")
+func pintRecordsLen(root *Item) {
+	recordsValue, _ := root.ExprValue("records")
 
 	if records, ok := recordsValue.([]interface{}); ok {
 		println(len(records))
+		//for _, record := range records {
+		//item := record.(*Item)
+		//value := item.value
+		//println(value)
+		//}
 	} else {
 		println(recordsValue)
 	}
@@ -33,7 +38,7 @@ func item() (ret *Item) {
 	ksyDataPath := os.Getenv("KSY_DATA")
 
 	var err error
-	m, err := NewModel(ksySpecPath, &Options{LazyDecoding: false, PositionFill: false})
+	m, err := NewModel(ksySpecPath, &Options{LazyDecoding: true, PositionFill: false})
 	if err != nil {
 		panic(err)
 	}

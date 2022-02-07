@@ -8,8 +8,6 @@ import (
 	"strings"
 )
 
-type ItemRead func(parent *Item, reader *ReaderIO) (ret *Item, err error)
-
 type AttrReader interface {
 	Attr() *Attr
 	Read(parent *Item, reader *ReaderIO) (ret interface{}, err error)
@@ -19,22 +17,22 @@ type NativeReader interface {
 	Read(parent *Item, reader *ReaderIO) (ret interface{}, err error)
 }
 
+type ReadItem func(parent *Item, reader *ReaderIO) (ret *Item, err error)
 type Read func(reader *ReaderIO) (ret interface{}, err error)
 type ParentRead func(parent *Item, reader *ReaderIO) (ret interface{}, err error)
 type Parse func(data []byte) (interface{}, error)
 type Decode func(fillItem *Item)
 
 type Item struct {
-	value    interface{}
-	Type     *Type
-	Err      error
-	Parent   *Item
-	StartPos *int64
-	EndPos   *int64
-	Raw      []byte
 	Attr     *Attr
-	Accessor interface{}
+	Type     *Type
+	Parent   *Item
+	StartPos int64
+	EndPos   int64
+	Raw      []byte
 	Decode   Decode
+	Err      error
+	value    interface{}
 }
 
 func (o *Item) Value() interface{} {
@@ -74,13 +72,11 @@ func (o *Item) Expr(expr string) (ret interface{}, err error) {
 }
 
 func (o *Item) SetStartPos(reader *ReaderIO) {
-	pos := reader.Position()
-	o.StartPos = &pos
+	o.StartPos = reader.Position()
 }
 
 func (o *Item) SetEndPos(reader *ReaderIO) {
-	pos := reader.Position()
-	o.EndPos = &pos
+	o.EndPos = reader.Position()
 }
 
 func (o *Item) SetValue(value interface{}) {
