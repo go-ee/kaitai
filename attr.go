@@ -141,10 +141,6 @@ func (o *AttrSizeLazyReader) Read(parent *Item, reader *ReaderIO) (ret interface
 		return
 	}
 
-	if item, ok := size.(*Item); ok {
-		size = item.Value()
-	}
-
 	var length uint16
 	if length, err = ToUint16(size); err != nil {
 		return
@@ -153,6 +149,7 @@ func (o *AttrSizeLazyReader) Read(parent *Item, reader *ReaderIO) (ret interface
 	parser := RawReaderParser{offset: reader.Position(), itemReader: o.itemReader}
 	parent.Decode = parser.Decode
 	parent.Raw, err = reader.ReadBytes(length)
+
 	return
 }
 

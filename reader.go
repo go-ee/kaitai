@@ -24,14 +24,14 @@ type Parse func(data []byte) (interface{}, error)
 type Decode func(fillItem *Item)
 
 type Item struct {
-	Attr     *Attr
-	Type     *Type
-	Parent   *Item
-	StartPos int64
-	EndPos   int64
-	Raw      []byte
-	Decode   Decode
-	Err      error
+	Attr     *Attr  `json:"-"`
+	Type     *Type  `json:"-"`
+	Parent   *Item  `json:"-"`
+	StartPos int64  `json:"-"`
+	EndPos   int64  `json:"-"`
+	Raw      []byte `json:"-"`
+	Decode   Decode `json:"-"`
+	Err      error  `json:"-"`
 	value    interface{}
 }
 

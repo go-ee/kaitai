@@ -52,8 +52,9 @@ func (o *TypeReader) buildItem(parent *Item) *Item {
 func (o *TypeReader) readTo(item *Item, reader *ReaderIO) (ret interface{}, err error) {
 	data := item.value.(map[string]interface{})
 	for _, attrReader := range o.readers {
+		attrName := attrReader.Attr().Id
 		if attrValue, attrErr := attrReader.Read(item, reader); attrErr == nil {
-			data[attrReader.Attr().Id] = attrValue
+			data[attrName] = attrValue
 		} else {
 			err = attrErr
 			break

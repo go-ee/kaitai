@@ -1,6 +1,9 @@
 package kaitai
 
 import (
+	"encoding/json"
+	"github.com/sirupsen/logrus"
+	"io/ioutil"
 	"os"
 	"testing"
 )
@@ -14,23 +17,11 @@ func BenchmarkParsing(t *testing.B) {
 }
 
 func toJson() {
+	logrus.Infof("start")
 	it := item()
-	pintRecordsLen(it)
-}
-
-func pintRecordsLen(root *Item) {
-	recordsValue, _ := root.ExprValue("records")
-
-	if records, ok := recordsValue.([]interface{}); ok {
-		println(len(records))
-		//for _, record := range records {
-		//item := record.(*Item)
-		//value := item.value
-		//println(value)
-		//}
-	} else {
-		println(recordsValue)
-	}
+	file, _ := json.Marshal(it)
+	_ = ioutil.WriteFile(it.Type.Id+".json", file, 0644)
+	logrus.Infof("end")
 }
 
 func item() (ret *Item) {
@@ -38,7 +29,7 @@ func item() (ret *Item) {
 	ksyDataPath := os.Getenv("KSY_DATA")
 
 	var err error
-	m, err := NewModel(ksySpecPath, &Options{LazyDecoding: true, PositionFill: false})
+	m, err := NewModel(ksySpecPath, &Options{LazyDecoding: false, PositionFill: false})
 	if err != nil {
 		panic(err)
 	}
