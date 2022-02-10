@@ -39,30 +39,21 @@ type TypeReader struct {
 	readers []AttrReader
 }
 
-func (o *TypeReader) Read(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
-	item := o.buildItem(parent)
-	ret, err = o.readTo(item, reader)
+func (o *TypeReader) Read(_ Item, reader *ReaderIO) (ret interface{}, err error) {
+	ret, err = o.readTo(Item{}, reader)
 	return
 }
 
-func (o *TypeReader) buildItem(parent *Item) *Item {
-	return &Item{Attr: o.attr, Type: o.Type, Parent: parent, value: map[string]interface{}{}}
-}
-
-func (o *TypeReader) readTo(item *Item, reader *ReaderIO) (ret interface{}, err error) {
-	data := item.value.(map[string]interface{})
+func (o *TypeReader) readTo(item Item, reader *ReaderIO) (ret interface{}, err error) {
+	ret = item
 	for _, attrReader := range o.readers {
 		attrName := attrReader.Attr().Id
 		if attrValue, attrErr := attrReader.Read(item, reader); attrErr == nil {
-			data[attrName] = attrValue
+			item[attrName] = attrValue
 		} else {
 			err = attrErr
 			break
 		}
-	}
-
-	if err == nil {
-		ret = item
 	}
 	return
 }
@@ -75,8 +66,8 @@ type SetPositionTypeReader struct {
 	*TypeReader
 }
 
-func (o *SetPositionTypeReader) Read(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
-	item := o.buildItem(parent)
+func (o *SetPositionTypeReader) Read(_ Item, reader *ReaderIO) (ret interface{}, err error) {
+	item := Item{}
 	item.SetStartPos(reader)
 	ret, err = o.readTo(item, reader)
 	item.SetEndPos(reader)

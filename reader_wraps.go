@@ -5,7 +5,7 @@ type AttrParentRead struct {
 	parentRead ParentRead
 }
 
-func (o *AttrParentRead) Read(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
+func (o *AttrParentRead) Read(parent Item, reader *ReaderIO) (ret interface{}, err error) {
 	return o.parentRead(parent, reader)
 }
 
@@ -14,7 +14,7 @@ func (o *AttrParentRead) Attr() *Attr {
 }
 
 func ReadToParentRead(read Read) ParentRead {
-	return func(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
+	return func(parent Item, reader *ReaderIO) (ret interface{}, err error) {
 		return read(reader)
 	}
 }

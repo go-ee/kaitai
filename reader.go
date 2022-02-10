@@ -10,55 +10,30 @@ import (
 
 type AttrReader interface {
 	Attr() *Attr
-	Read(parent *Item, reader *ReaderIO) (ret interface{}, err error)
+	Read(parent Item, reader *ReaderIO) (ret interface{}, err error)
 }
 
 type NativeReader interface {
-	Read(parent *Item, reader *ReaderIO) (ret interface{}, err error)
+	Read(parent Item, reader *ReaderIO) (ret interface{}, err error)
 }
 
-type ReadItem func(parent *Item, reader *ReaderIO) (ret *Item, err error)
+type ReadItem func(parent Item, reader *ReaderIO) (ret Item, err error)
 type Read func(reader *ReaderIO) (ret interface{}, err error)
-type ParentRead func(parent *Item, reader *ReaderIO) (ret interface{}, err error)
+type ParentRead func(parent Item, reader *ReaderIO) (ret interface{}, err error)
 type Parse func(data []byte) (interface{}, error)
-type Decode func(fillItem *Item)
+type Decode func(fillItem Item)
 
-type Item struct {
-	Attr     *Attr  `json:"-"`
-	Type     *Type  `json:"-"`
-	Parent   *Item  `json:"-"`
-	StartPos int64  `json:"-"`
-	EndPos   int64  `json:"-"`
-	Raw      []byte `json:"-"`
-	Decode   Decode `json:"-"`
-	Err      error  `json:"-"`
-	value    interface{}
-}
+type Item map[string]interface{}
 
-func (o *Item) Value() interface{} {
-	if o.value == nil && o.Err == nil && o.Raw != nil {
-		o.Decode(o)
-	}
-	return o.value
-}
-
-func (o *Item) ExprValue(expr string) (ret interface{}, err error) {
-	if ret, err = o.Expr(expr); err == nil {
-		if item, ok := ret.(*Item); ok {
-			ret = item.Value()
-		}
-	}
+func (o Item) ExprValue(expr string) (ret interface{}, err error) {
+	ret, err = o.Expr(expr)
 	return
 }
 
-func (o *Item) Expr(expr string) (ret interface{}, err error) {
+func (o Item) Expr(expr string) (ret interface{}, err error) {
 	ret = o
 	for _, part := range strings.Split(expr, ".") {
-		if item, ok := ret.(*Item); ok {
-			ret = item.Value()
-		}
-
-		if value, ok := ret.(map[string]interface{}); ok {
+		if value, ok := ret.(Item); ok {
 			if ret = value[part]; ret == nil {
 				err = fmt.Errorf("can't resolve '%v' of expression '%v'", part, expr)
 				break
@@ -71,16 +46,12 @@ func (o *Item) Expr(expr string) (ret interface{}, err error) {
 	return
 }
 
-func (o *Item) SetStartPos(reader *ReaderIO) {
-	o.StartPos = reader.Position()
+func (o Item) SetStartPos(reader *ReaderIO) {
+	o["_startPos"] = reader.Position()
 }
 
-func (o *Item) SetEndPos(reader *ReaderIO) {
-	o.EndPos = reader.Position()
-}
-
-func (o *Item) SetValue(value interface{}) {
-	o.value = value
+func (o Item) SetEndPos(reader *ReaderIO) {
+	o["_endPos"] = reader.Position()
 }
 
 type ReaderIO struct {
