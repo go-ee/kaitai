@@ -18,36 +18,36 @@ type Parse func(data []byte) (interface{}, error)
 type Decode func(fillItem *Item)
 
 type TypeModel struct {
-	indexToAttr []*Attr
-	indexToName []string
-	nameToIndex map[string]int
+	attrs       []*Attr
+	names       []string
+	indexByName map[string]int
 }
 
 func NewTypeModel(attrCount int) (ret *TypeModel) {
 	ret = &TypeModel{
-		indexToAttr: make([]*Attr, attrCount),
-		indexToName: make([]string, attrCount),
-		nameToIndex: make(map[string]int, attrCount),
+		attrs:       make([]*Attr, attrCount),
+		names:       make([]string, attrCount),
+		indexByName: make(map[string]int, attrCount),
 	}
 	return
 }
 
 func (o *TypeModel) SetAttr(attrIndex int, attr *Attr) {
-	o.indexToAttr[attrIndex] = attr
-	o.indexToName[attrIndex] = attr.Id
-	o.nameToIndex[attr.Id] = attrIndex
+	o.attrs[attrIndex] = attr
+	o.names[attrIndex] = attr.Id
+	o.indexByName[attr.Id] = attrIndex
 }
 
 func (o *TypeModel) IndexToAttrName(index int) string {
-	return o.indexToName[index]
+	return o.names[index]
 }
 
 func (o *TypeModel) IndexToAttr(index int) *Attr {
-	return o.indexToAttr[index]
+	return o.attrs[index]
 }
 
 func (o *TypeModel) AttrToIndex(attr string) int {
-	return o.nameToIndex[attr]
+	return o.indexByName[attr]
 }
 
 type Item struct {

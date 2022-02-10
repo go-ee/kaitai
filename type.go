@@ -62,7 +62,7 @@ func (o *TypeReader) readTo(item *Item, reader *ReaderIO) (ret interface{}, err 
 }
 
 func (o TypeReader) NewItem() (ret *Item) {
-	return &Item{Model: o.model, Attrs: make([]interface{}, len(o.model.indexToAttr))}
+	return &Item{Model: o.model, Attrs: make([]interface{}, len(o.model.attrs))}
 }
 
 type SetPositionTypeReader struct {
