@@ -10,7 +10,7 @@ import (
 type Model struct {
 	Root       *Type
 	Spec       *Spec
-	itemReader AttrReader
+	itemReader Reader
 }
 
 func NewModel(ksyPath string, options *Options) (ret *Model, err error) {

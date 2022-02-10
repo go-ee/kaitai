@@ -8,12 +8,17 @@ import (
 	"strings"
 )
 
-type AttrReader interface {
-	Attr() *Attr
-	Read(parent Item, reader *ReaderIO) (ret interface{}, err error)
-}
+const (
+	_model    = -1
+	_startPos = -2
+	_endPos   = -3
 
-type NativeReader interface {
+	_model_1    = "_model"
+	_startPos_2 = "_startPos"
+	_endPos_3   = "_endPos"
+)
+
+type Reader interface {
 	Read(parent Item, reader *ReaderIO) (ret interface{}, err error)
 }
 
@@ -22,7 +27,61 @@ type ParentRead func(parent Item, reader *ReaderIO) (ret interface{}, err error)
 type Parse func(data []byte) (interface{}, error)
 type Decode func(fillItem Item)
 
-type Item map[string]interface{}
+type TypeModel struct {
+	indexToAttr map[int]*Attr
+	indexToName map[int]string
+	nameToIndex map[string]int
+}
+
+func NewTypeModel() (ret *TypeModel) {
+	ret = &TypeModel{
+		indexToAttr: map[int]*Attr{},
+		indexToName: map[int]string{},
+		nameToIndex: map[string]int{},
+	}
+
+	ret.indexToName[_model] = _model_1
+	ret.indexToName[_startPos] = _startPos_2
+	ret.indexToName[_endPos] = _endPos_3
+
+	ret.nameToIndex[_model_1] = _model
+	ret.nameToIndex[_startPos_2] = _startPos
+	ret.nameToIndex[_endPos_3] = _endPos
+
+	return
+}
+
+func (o *TypeModel) AddAttr(attrIndex int, attr *Attr) {
+	o.indexToAttr[attrIndex] = attr
+	o.indexToName[attrIndex] = attr.Id
+	o.nameToIndex[attr.Id] = attrIndex
+}
+
+func (o *TypeModel) IndexToAttr(index int) string {
+	return o.indexToName[index]
+}
+
+func (o *TypeModel) AttrToIndex(attr string) int {
+	return o.nameToIndex[attr]
+}
+
+type Item map[int]interface{}
+
+func (o Item) Model() (ret *TypeModel) {
+	return o[_model].(*TypeModel)
+}
+
+func (o Item) SetModel(model *TypeModel) {
+	o[_model] = model
+}
+
+func (o Item) IndexToAttr(index int) string {
+	return o.Model().IndexToAttr(index)
+}
+
+func (o Item) AttrToIndex(attr string) int {
+	return o.Model().AttrToIndex(attr)
+}
 
 func (o Item) ExprValue(expr string) (ret interface{}, err error) {
 	ret, err = o.Expr(expr)
@@ -33,7 +92,8 @@ func (o Item) Expr(expr string) (ret interface{}, err error) {
 	ret = o
 	for _, part := range strings.Split(expr, ".") {
 		if value, ok := ret.(Item); ok {
-			if ret = value[part]; ret == nil {
+			index := value.AttrToIndex(part)
+			if ret = value[index]; ret == nil {
 				err = fmt.Errorf("can't resolve '%v' of expression '%v'", part, expr)
 				break
 			}
@@ -46,11 +106,11 @@ func (o Item) Expr(expr string) (ret interface{}, err error) {
 }
 
 func (o Item) SetStartPos(reader *ReaderIO) {
-	o["_startPos"] = reader.Position()
+	o[_startPos] = reader.Position()
 }
 
 func (o Item) SetEndPos(reader *ReaderIO) {
-	o["_endPos"] = reader.Position()
+	o[_endPos] = reader.Position()
 }
 
 type ReaderIO struct {

@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-func BuildReadAttr(attr *Attr, parse Parse) (ret AttrReader) {
+func BuildReadAttr(attr *Attr, parse Parse) (ret Reader) {
 	if attr.SizeEos == "true" {
 		ret = &AttrParentRead{attr, BuildReadToFull(parse)}
 	} else if attr.Size != "" {

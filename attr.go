@@ -30,8 +30,8 @@ type Attr struct {
 	Encoding    string    `yaml:"encoding,omitempty"`
 }
 
-func (o *Attr) BuildReader(spec *Spec) (ret AttrReader, err error) {
-	var itemReader AttrReader
+func (o *Attr) BuildReader(spec *Spec) (ret Reader, err error) {
+	var itemReader Reader
 
 	if o.Type != nil {
 		itemReader, err = o.Type.BuildReader(o, spec)
@@ -55,7 +55,7 @@ func (o *Attr) BuildReader(spec *Spec) (ret AttrReader, err error) {
 
 type AttrCycleReader struct {
 	attr       *Attr
-	itemReader AttrReader
+	itemReader Reader
 }
 
 func (o *AttrCycleReader) Attr() *Attr {
@@ -84,7 +84,7 @@ func (o *AttrCycleReader) Read(parent Item, reader *ReaderIO) (ret interface{}, 
 
 type AttrSizeReader struct {
 	attr       *Attr
-	itemReader AttrReader
+	itemReader Reader
 }
 
 func (o *AttrSizeReader) Attr() *Attr {

@@ -38,6 +38,6 @@ func item() (ret Item) {
 	if err != nil {
 		panic(err)
 	}
-	logrus.Infof("version %v", ret["version"])
+	logrus.Infof("version %v", ret[0])
 	return
 }

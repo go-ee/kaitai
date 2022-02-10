@@ -12,7 +12,7 @@ type Contents struct {
 	TypeSwitch    *TypeSwitch
 }
 
-func (o *Contents) BuildReader(attr *Attr, spec *Spec) (ret AttrReader, err error) {
+func (o *Contents) BuildReader(attr *Attr, spec *Spec) (ret Reader, err error) {
 	if o.ContentString != "" {
 		ret = &ContentStringReader{
 			attr: attr, value: o.ContentString, validate: true,
