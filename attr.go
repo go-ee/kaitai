@@ -38,7 +38,7 @@ func (o *Attr) BuildReader(spec *Spec) (ret AttrReader, err error) {
 	} else if o.Contents != nil {
 		itemReader, err = o.Contents.BuildReader(o, spec)
 	} else if o.SizeEos == "true" {
-		itemReader = &AttrParentRead{attr: o, parentRead: ReadToParentRead(BuildReadToFull(ToSame))}
+		itemReader = &AttrParentRead{attr: o, parentRead: BuildReadToFull(ToSame)}
 	} else {
 		err = fmt.Errorf("read attr: ELSE, not implemented yet")
 	}

@@ -7,10 +7,10 @@ import (
 
 func BuildReadAttr(attr *Attr, parse Parse) (ret AttrReader) {
 	if attr.SizeEos == "true" {
-		ret = &AttrParentRead{attr, ReadToParentRead(BuildReadToFull(parse))}
+		ret = &AttrParentRead{attr, BuildReadToFull(parse)}
 	} else if attr.Size != "" {
 		if length, err := strconv.Atoi(attr.Size); err == nil {
-			ret = &AttrParentRead{attr, ReadToParentRead(BuildReadToLength(uint16(length), parse))}
+			ret = &AttrParentRead{attr, BuildReadToLength(uint16(length), parse)}
 		} else {
 			ret = &AttrParentRead{attr, BuildReadToLengthExpr(attr.Size, parse)}
 		}
@@ -18,8 +18,8 @@ func BuildReadAttr(attr *Attr, parse Parse) (ret AttrReader) {
 	return
 }
 
-func BuildReadToFull(parse Parse) (ret Read) {
-	return func(reader *ReaderIO) (ret interface{}, err error) {
+func BuildReadToFull(parse Parse) (ret ParentRead) {
+	return func(parent Item, reader *ReaderIO) (ret interface{}, err error) {
 		var data []byte
 		if data, err = reader.ReadBytesFull(); err == nil {
 			ret, err = parse(data)
@@ -28,8 +28,8 @@ func BuildReadToFull(parse Parse) (ret Read) {
 	}
 }
 
-func BuildReadToLength(length uint16, parse Parse) (ret Read) {
-	return func(reader *ReaderIO) (ret interface{}, err error) {
+func BuildReadToLength(length uint16, parse Parse) (ret ParentRead) {
+	return func(parent Item, reader *ReaderIO) (ret interface{}, err error) {
 		return ReadToLength(reader, length, parse)
 	}
 }

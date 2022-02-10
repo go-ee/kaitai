@@ -7,7 +7,7 @@ type EndianBuildReadB struct {
 	endianConverter EndianReader
 }
 
-func (o *EndianBuildReadB) BuildRead(length uint8) (ret Read) {
+func (o *EndianBuildReadB) BuildRead(length uint8) (ret ParentRead) {
 	switch length {
 	case 1:
 		ret = o.BuildRead1()
@@ -19,8 +19,8 @@ func (o *EndianBuildReadB) BuildRead(length uint8) (ret Read) {
 	return
 }
 
-func (o *EndianBuildReadB) BuildRead1() Read {
-	return func(reader *ReaderIO) (ret interface{}, err error) {
+func (o *EndianBuildReadB) BuildRead1() ParentRead {
+	return func(parent Item, reader *ReaderIO) (ret interface{}, err error) {
 		var value uint64
 		if value, err = o.endianConverter.ReadBitsInt(reader, 1); err == nil {
 			ret = value != 0
@@ -29,8 +29,8 @@ func (o *EndianBuildReadB) BuildRead1() Read {
 	}
 }
 
-func (o *EndianBuildReadB) BuildRead2() Read {
-	return func(reader *ReaderIO) (ret interface{}, err error) {
+func (o *EndianBuildReadB) BuildRead2() ParentRead {
+	return func(parent Item, reader *ReaderIO) (ret interface{}, err error) {
 		var value uint64
 		if value, err = o.endianConverter.ReadBitsInt(reader, 2); err == nil {
 			ret = uint(value)
@@ -39,8 +39,8 @@ func (o *EndianBuildReadB) BuildRead2() Read {
 	}
 }
 
-func (o *EndianBuildReadB) BuildReadUint64(length uint8) Read {
-	return func(reader *ReaderIO) (ret interface{}, err error) {
+func (o *EndianBuildReadB) BuildReadUint64(length uint8) ParentRead {
+	return func(parent Item, reader *ReaderIO) (ret interface{}, err error) {
 		var value uint64
 		if value, err = o.endianConverter.ReadBitsInt(reader, length); err == nil {
 			ret = value

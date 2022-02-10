@@ -8,7 +8,7 @@ import (
 )
 
 type BuildReader interface {
-	BuildRead(length uint8) (ret Read)
+	BuildRead(length uint8) (ret ParentRead)
 }
 
 type Native struct {
@@ -58,7 +58,7 @@ func (o *Native) buildReader(attr *Attr) (ret AttrReader, err error) {
 		}
 
 		if err == nil {
-			ret = &AttrParentRead{attr, ReadToParentRead(buildReader.BuildRead(o.Length))}
+			ret = &AttrParentRead{attr, buildReader.BuildRead(o.Length)}
 		}
 	}
 	return

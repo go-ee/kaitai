@@ -18,7 +18,6 @@ type NativeReader interface {
 }
 
 type ReadItem func(parent Item, reader *ReaderIO) (ret Item, err error)
-type Read func(reader *ReaderIO) (ret interface{}, err error)
 type ParentRead func(parent Item, reader *ReaderIO) (ret interface{}, err error)
 type Parse func(data []byte) (interface{}, error)
 type Decode func(fillItem Item)
