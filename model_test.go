@@ -22,7 +22,7 @@ func toJson() {
 	logrus.Infof("end")
 }
 
-func item() (ret Item) {
+func item() (ret *Item) {
 	ksySpecPath := os.Getenv("KSY_SPEC")
 	ksyDataPath := os.Getenv("KSY_DATA")
 
@@ -38,6 +38,6 @@ func item() (ret Item) {
 	if err != nil {
 		panic(err)
 	}
-	logrus.Infof("version %v", ret[0])
+	logrus.Infof("version %v", ret.Attrs[0])
 	return
 }

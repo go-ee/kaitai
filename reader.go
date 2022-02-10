@@ -8,92 +8,74 @@ import (
 	"strings"
 )
 
-const (
-	_model    = -1
-	_startPos = -2
-	_endPos   = -3
-
-	_model_1    = "_model"
-	_startPos_2 = "_startPos"
-	_endPos_3   = "_endPos"
-)
-
 type Reader interface {
-	Read(parent Item, reader *ReaderIO) (ret interface{}, err error)
+	Read(parent *Item, reader *ReaderIO) (ret interface{}, err error)
 }
 
-type ReadItem func(parent Item, reader *ReaderIO) (ret Item, err error)
-type ParentRead func(parent Item, reader *ReaderIO) (ret interface{}, err error)
+type ReadItem func(parent *Item, reader *ReaderIO) (ret *Item, err error)
+type ParentRead func(parent *Item, reader *ReaderIO) (ret interface{}, err error)
 type Parse func(data []byte) (interface{}, error)
-type Decode func(fillItem Item)
+type Decode func(fillItem *Item)
 
 type TypeModel struct {
-	indexToAttr map[int]*Attr
-	indexToName map[int]string
+	indexToAttr []*Attr
+	indexToName []string
 	nameToIndex map[string]int
 }
 
-func NewTypeModel() (ret *TypeModel) {
+func NewTypeModel(attrCount int) (ret *TypeModel) {
 	ret = &TypeModel{
-		indexToAttr: map[int]*Attr{},
-		indexToName: map[int]string{},
-		nameToIndex: map[string]int{},
+		indexToAttr: make([]*Attr, attrCount),
+		indexToName: make([]string, attrCount),
+		nameToIndex: make(map[string]int, attrCount),
 	}
-
-	ret.indexToName[_model] = _model_1
-	ret.indexToName[_startPos] = _startPos_2
-	ret.indexToName[_endPos] = _endPos_3
-
-	ret.nameToIndex[_model_1] = _model
-	ret.nameToIndex[_startPos_2] = _startPos
-	ret.nameToIndex[_endPos_3] = _endPos
-
 	return
 }
 
-func (o *TypeModel) AddAttr(attrIndex int, attr *Attr) {
+func (o *TypeModel) SetAttr(attrIndex int, attr *Attr) {
 	o.indexToAttr[attrIndex] = attr
 	o.indexToName[attrIndex] = attr.Id
 	o.nameToIndex[attr.Id] = attrIndex
 }
 
-func (o *TypeModel) IndexToAttr(index int) string {
+func (o *TypeModel) IndexToAttrName(index int) string {
 	return o.indexToName[index]
+}
+
+func (o *TypeModel) IndexToAttr(index int) *Attr {
+	return o.indexToAttr[index]
 }
 
 func (o *TypeModel) AttrToIndex(attr string) int {
 	return o.nameToIndex[attr]
 }
 
-type Item map[int]interface{}
-
-func (o Item) Model() (ret *TypeModel) {
-	return o[_model].(*TypeModel)
+type Item struct {
+	Model    *TypeModel
+	Attrs    []interface{}
+	StartPos int64
+	EndPos   int64
 }
 
-func (o Item) SetModel(model *TypeModel) {
-	o[_model] = model
+func (o *Item) IndexToAttr(index int) string {
+	return o.Model.IndexToAttrName(index)
 }
 
-func (o Item) IndexToAttr(index int) string {
-	return o.Model().IndexToAttr(index)
+func (o *Item) AttrToIndex(attr string) int {
+	return o.Model.AttrToIndex(attr)
 }
 
-func (o Item) AttrToIndex(attr string) int {
-	return o.Model().AttrToIndex(attr)
-}
-
-func (o Item) ExprValue(expr string) (ret interface{}, err error) {
+func (o *Item) ExprValue(expr string) (ret interface{}, err error) {
 	ret, err = o.Expr(expr)
 	return
 }
 
-func (o Item) Expr(expr string) (ret interface{}, err error) {
+func (o *Item) Expr(expr string) (ret interface{}, err error) {
 	ret = o
 	for _, part := range strings.Split(expr, ".") {
-		if value, ok := ret.(Item); ok {
+		if value, ok := ret.(*Item); ok {
 			index := value.AttrToIndex(part)
-			if ret = value[index]; ret == nil {
+			if ret = value.Attrs[index]; ret == nil {
 				err = fmt.Errorf("can't resolve '%v' of expression '%v'", part, expr)
 				break
 			}
@@ -105,12 +87,12 @@ func (o Item) Expr(expr string) (ret interface{}, err error) {
 	return
 }
 
-func (o Item) SetStartPos(reader *ReaderIO) {
-	o[_startPos] = reader.Position()
+func (o *Item) SetStartPos(reader *ReaderIO) {
+	o.StartPos = reader.Position()
 }
 
-func (o Item) SetEndPos(reader *ReaderIO) {
-	o[_endPos] = reader.Position()
+func (o *Item) SetEndPos(reader *ReaderIO) {
+	o.EndPos = reader.Position()
 }
 
 type ReaderIO struct {

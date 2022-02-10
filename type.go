@@ -6,11 +6,11 @@ type Type struct {
 	Doc string  `yaml:"doc,omitempty"`
 }
 
-func (o *Type) BuildReader(attr *Attr, spec *Spec) (ret Reader, err error) {
+func (o *Type) BuildReader(_ *Attr, spec *Spec) (ret Reader, err error) {
 	var seqReaders []Reader
 	var typeModel *TypeModel
 	if seqReaders, typeModel, err = o.buildSeqReaders(spec); err == nil {
-		typeReader := &TypeReader{o, typeModel, attr, seqReaders}
+		typeReader := &TypeReader{o, typeModel, seqReaders}
 		if spec.Options.PositionFill {
 			ret = &SetPositionTypeReader{typeReader}
 		} else {
@@ -21,10 +21,11 @@ func (o *Type) BuildReader(attr *Attr, spec *Spec) (ret Reader, err error) {
 }
 
 func (o *Type) buildSeqReaders(spec *Spec) (ret []Reader, model *TypeModel, err error) {
-	model = NewTypeModel()
-	readers := make([]Reader, len(o.Seq))
+	attrCount := len(o.Seq)
+	model = NewTypeModel(attrCount)
+	readers := make([]Reader, attrCount)
 	for i, attr := range o.Seq {
-		model.AddAttr(i, attr)
+		model.SetAttr(i, attr)
 		if readers[i], err = attr.BuildReader(spec); err != nil {
 			return
 		}
@@ -39,20 +40,19 @@ func (o *Type) buildSeqReaders(spec *Spec) (ret []Reader, model *TypeModel, err 
 type TypeReader struct {
 	*Type
 	model   *TypeModel
-	attr    *Attr
 	readers []Reader
 }
 
-func (o *TypeReader) Read(_ Item, reader *ReaderIO) (ret interface{}, err error) {
+func (o *TypeReader) Read(_ *Item, reader *ReaderIO) (ret interface{}, err error) {
 	ret, err = o.readTo(o.NewItem(), reader)
 	return
 }
 
-func (o *TypeReader) readTo(item Item, reader *ReaderIO) (ret interface{}, err error) {
+func (o *TypeReader) readTo(item *Item, reader *ReaderIO) (ret interface{}, err error) {
 	ret = item
 	for i, attrReader := range o.readers {
 		if attrValue, attrErr := attrReader.Read(item, reader); attrErr == nil {
-			item[i] = attrValue
+			item.Attrs[i] = attrValue
 		} else {
 			err = attrErr
 			break
@@ -61,28 +61,18 @@ func (o *TypeReader) readTo(item Item, reader *ReaderIO) (ret interface{}, err e
 	return
 }
 
-func (o TypeReader) NewItem() (ret Item) {
-	ret = Item{}
-	ret.SetModel(o.model)
-	return
-}
-
-func (o TypeReader) Attr() *Attr {
-	return o.attr
+func (o TypeReader) NewItem() (ret *Item) {
+	return &Item{Model: o.model, Attrs: make([]interface{}, len(o.model.indexToAttr))}
 }
 
 type SetPositionTypeReader struct {
 	*TypeReader
 }
 
-func (o *SetPositionTypeReader) Read(_ Item, reader *ReaderIO) (ret interface{}, err error) {
-	item := Item{}
+func (o *SetPositionTypeReader) Read(_ *Item, reader *ReaderIO) (ret interface{}, err error) {
+	item := o.NewItem()
 	item.SetStartPos(reader)
 	ret, err = o.readTo(item, reader)
 	item.SetEndPos(reader)
 	return
-}
-
-func (o SetPositionTypeReader) Attr() *Attr {
-	return o.attr
 }

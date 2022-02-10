@@ -44,7 +44,7 @@ func (o *Attr) BuildReader(spec *Spec) (ret Reader, err error) {
 	}
 
 	if o.Repeat == "eos" {
-		ret = &AttrCycleReader{attr: o, itemReader: itemReader}
+		ret = &AttrCycleReader{itemReader: itemReader}
 	} else if o.Size != "" {
 		ret = &AttrSizeReader{attr: o, itemReader: itemReader}
 	} else {
@@ -54,15 +54,10 @@ func (o *Attr) BuildReader(spec *Spec) (ret Reader, err error) {
 }
 
 type AttrCycleReader struct {
-	attr       *Attr
 	itemReader Reader
 }
 
-func (o *AttrCycleReader) Attr() *Attr {
-	return o.attr
-}
-
-func (o *AttrCycleReader) Read(parent Item, reader *ReaderIO) (ret interface{}, err error) {
+func (o *AttrCycleReader) Read(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
 	var items []interface{}
 	for i := 0; err == nil; i++ {
 		var item interface{}
@@ -87,11 +82,7 @@ type AttrSizeReader struct {
 	itemReader Reader
 }
 
-func (o *AttrSizeReader) Attr() *Attr {
-	return o.attr
-}
-
-func (o *AttrSizeReader) Read(parent Item, reader *ReaderIO) (ret interface{}, err error) {
+func (o *AttrSizeReader) Read(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
 	var size interface{}
 	if size, err = parent.Expr(o.attr.Size); err != nil {
 		return

@@ -28,7 +28,7 @@ func (o *EndianBuildReadU) BuildRead(length uint8) (ret ParentRead) {
 }
 
 func (o *EndianBuildReadU) BuildRead1() ParentRead {
-	return func(parent Item, reader *ReaderIO) (ret interface{}, err error) {
+	return func(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
 		var data []byte
 		if data, err = reader.ReadBytes(1); err == nil {
 			ret = o.endianConverter.Uint8(data)
@@ -38,7 +38,7 @@ func (o *EndianBuildReadU) BuildRead1() ParentRead {
 }
 
 func (o *EndianBuildReadU) BuildRead2() ParentRead {
-	return func(parent Item, reader *ReaderIO) (ret interface{}, err error) {
+	return func(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
 		var data []byte
 		if data, err = reader.ReadBytes(2); err == nil {
 			ret = o.endianConverter.Uint16(data)
@@ -48,7 +48,7 @@ func (o *EndianBuildReadU) BuildRead2() ParentRead {
 }
 
 func (o *EndianBuildReadU) BuildRead4() ParentRead {
-	return func(parent Item, reader *ReaderIO) (ret interface{}, err error) {
+	return func(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
 		var data []byte
 		if data, err = reader.ReadBytes(4); err == nil {
 			ret = o.endianConverter.Uint32(data)
@@ -58,7 +58,7 @@ func (o *EndianBuildReadU) BuildRead4() ParentRead {
 }
 
 func (o *EndianBuildReadU) BuildRead8() ParentRead {
-	return func(parent Item, reader *ReaderIO) (ret interface{}, err error) {
+	return func(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
 		var data []byte
 		if data, err = reader.ReadBytes(8); err == nil {
 			ret = o.endianConverter.Uint64(data)

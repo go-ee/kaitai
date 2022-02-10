@@ -48,7 +48,7 @@ func (o *ContentStringReader) Attr() *Attr {
 	return o.attr
 }
 
-func (o *ContentStringReader) Read(_ Item, reader *ReaderIO) (ret interface{}, err error) {
+func (o *ContentStringReader) Read(_ *Item, reader *ReaderIO) (ret interface{}, err error) {
 	//each character as a byte
 	var data []byte
 	if data, err = reader.ReadBytes(uint16(len(o.value))); err == nil {
@@ -73,7 +73,7 @@ func (o *ContentArrayReader) Attr() *Attr {
 	return o.attr
 }
 
-func (o *ContentArrayReader) Read(_ Item, reader *ReaderIO) (ret interface{}, err error) {
+func (o *ContentArrayReader) Read(_ *Item, reader *ReaderIO) (ret interface{}, err error) {
 	//each character as a byte
 	var data []byte
 	if data, err = reader.ReadBytes(uint16(len(o.array))); err == nil {
