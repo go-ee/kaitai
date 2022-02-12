@@ -57,7 +57,7 @@ type AttrCycleReader struct {
 	itemReader Reader
 }
 
-func (o *AttrCycleReader) Read(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
+func (o *AttrCycleReader) Read(parent *TypeItem, reader *ReaderIO) (ret interface{}, err error) {
 	var items []interface{}
 	for i := 0; err == nil; i++ {
 		var item interface{}
@@ -82,7 +82,7 @@ type AttrSizeReader struct {
 	itemReader Reader
 }
 
-func (o *AttrSizeReader) Read(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
+func (o *AttrSizeReader) Read(parent *TypeItem, reader *ReaderIO) (ret interface{}, err error) {
 	var size interface{}
 	if size, err = parent.Expr(o.attr.Size); err != nil {
 		return

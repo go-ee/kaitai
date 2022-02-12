@@ -25,7 +25,7 @@ func (o *Type) buildSeqReaders(spec *Spec) (ret []Reader, model *TypeModel, err 
 	model = NewTypeModel(attrCount)
 	readers := make([]Reader, attrCount)
 	for i, attr := range o.Seq {
-		model.SetAttr(i, attr)
+		model.AddAttr(i, attr)
 		if readers[i], err = attr.BuildReader(spec); err != nil {
 			return
 		}
@@ -43,16 +43,16 @@ type TypeReader struct {
 	readers []Reader
 }
 
-func (o *TypeReader) Read(_ *Item, reader *ReaderIO) (ret interface{}, err error) {
-	ret, err = o.readTo(o.NewItem(), reader)
+func (o *TypeReader) Read(_ *TypeItem, reader *ReaderIO) (ret interface{}, err error) {
+	ret, err = o.readTo(NewTypeItem(o.model), reader)
 	return
 }
 
-func (o *TypeReader) readTo(item *Item, reader *ReaderIO) (ret interface{}, err error) {
+func (o *TypeReader) readTo(item *TypeItem, reader *ReaderIO) (ret interface{}, err error) {
 	ret = item
 	for i, attrReader := range o.readers {
 		if attrValue, attrErr := attrReader.Read(item, reader); attrErr == nil {
-			item.Attrs[i] = attrValue
+			item.SetAttrValue(i, attrValue)
 		} else {
 			err = attrErr
 			break
@@ -61,16 +61,12 @@ func (o *TypeReader) readTo(item *Item, reader *ReaderIO) (ret interface{}, err 
 	return
 }
 
-func (o TypeReader) NewItem() (ret *Item) {
-	return &Item{Model: o.model, Attrs: make([]interface{}, len(o.model.attrs))}
-}
-
 type SetPositionTypeReader struct {
 	*TypeReader
 }
 
-func (o *SetPositionTypeReader) Read(_ *Item, reader *ReaderIO) (ret interface{}, err error) {
-	item := o.NewItem()
+func (o *SetPositionTypeReader) Read(_ *TypeItem, reader *ReaderIO) (ret interface{}, err error) {
+	item := NewTypeItem(o.model)
 	item.SetStartPos(reader)
 	ret, err = o.readTo(item, reader)
 	item.SetEndPos(reader)

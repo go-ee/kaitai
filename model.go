@@ -45,7 +45,7 @@ func (o *Model) build() (err error) {
 	return
 }
 
-func (o *Model) Read(filePath string) (ret *Item, err error) {
+func (o *Model) Read(filePath string) (ret *TypeItem, err error) {
 	var file *os.File
 	if file, err = os.Open(filePath); err != nil {
 		return
@@ -54,7 +54,7 @@ func (o *Model) Read(filePath string) (ret *Item, err error) {
 
 	var item interface{}
 	if item, err = o.itemReader.Read(nil, &ReaderIO{ReadSeeker: file}); err == nil {
-		ret = item.(*Item)
+		ret = item.(*TypeItem)
 	}
 	return
 }

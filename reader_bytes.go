@@ -19,7 +19,7 @@ func BuildReadAttr(attr *Attr, parse Parse) (ret Reader) {
 }
 
 func BuildReadToFull(parse Parse) (ret ParentRead) {
-	return func(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
+	return func(parent *TypeItem, reader *ReaderIO) (ret interface{}, err error) {
 		var data []byte
 		if data, err = reader.ReadBytesFull(); err == nil {
 			ret, err = parse(data)
@@ -29,7 +29,7 @@ func BuildReadToFull(parse Parse) (ret ParentRead) {
 }
 
 func BuildReadToLength(length uint16, parse Parse) (ret ParentRead) {
-	return func(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
+	return func(parent *TypeItem, reader *ReaderIO) (ret interface{}, err error) {
 		return ReadToLength(reader, length, parse)
 	}
 }
@@ -49,7 +49,7 @@ func ReadToLength(reader *ReaderIO, length uint16, parse Parse) (ret interface{}
 }
 
 func BuildReadToLengthExpr(expr string, parse Parse) (ret ParentRead) {
-	return func(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
+	return func(parent *TypeItem, reader *ReaderIO) (ret interface{}, err error) {
 		var sizeItem interface{}
 		if sizeItem, err = parent.ExprValue(expr); err == nil {
 			var length uint16

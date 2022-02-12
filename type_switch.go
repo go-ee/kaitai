@@ -20,8 +20,8 @@ func (o *TypeSwitch) BuildReader(attr *Attr, spec *Spec) (ret Reader, err error)
 	return
 }
 
-func (o *TypeSwitch) buildSwitchValueFinder() func(attr *Attr, item *Item) (ret string, err error) {
-	return func(attr *Attr, parent *Item) (ret string, err error) {
+func (o *TypeSwitch) buildSwitchValueFinder() func(attr *Attr, item *TypeItem) (ret string, err error) {
+	return func(attr *Attr, parent *TypeItem) (ret string, err error) {
 		var switchOnValue interface{}
 		if switchOnValue, err = parent.ExprValue(o.SwitchOn); err != nil {
 			return
@@ -45,7 +45,7 @@ func (o *TypeSwitch) buildCaseReaders(attr *Attr, spec *Spec) (ret map[string]Re
 
 type TypeSwitchReader struct {
 	attr            *Attr
-	findSwitchValue func(attr *Attr, parent *Item) (string, error)
+	findSwitchValue func(attr *Attr, parent *TypeItem) (string, error)
 	cases           map[string]Reader
 	defaultCase     Reader
 }
@@ -54,7 +54,7 @@ func (o *TypeSwitchReader) Attr() *Attr {
 	return o.attr
 }
 
-func (o *TypeSwitchReader) Read(parent *Item, reader *ReaderIO) (ret interface{}, err error) {
+func (o *TypeSwitchReader) Read(parent *TypeItem, reader *ReaderIO) (ret interface{}, err error) {
 	var switchValue string
 	if switchValue, err = o.findSwitchValue(o.attr, parent); err != nil {
 		return

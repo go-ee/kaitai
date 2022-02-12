@@ -9,13 +9,13 @@ import (
 )
 
 type Reader interface {
-	Read(parent *Item, reader *ReaderIO) (ret interface{}, err error)
+	Read(parent *TypeItem, reader *ReaderIO) (ret interface{}, err error)
 }
 
-type ReadItem func(parent *Item, reader *ReaderIO) (ret *Item, err error)
-type ParentRead func(parent *Item, reader *ReaderIO) (ret interface{}, err error)
+type ReadItem func(parent *TypeItem, reader *ReaderIO) (ret *TypeItem, err error)
+type ParentRead func(parent *TypeItem, reader *ReaderIO) (ret interface{}, err error)
 type Parse func(data []byte) (interface{}, error)
-type Decode func(fillItem *Item)
+type Decode func() (interface{}, error)
 
 type TypeModel struct {
 	attrs       []*Attr
@@ -32,7 +32,7 @@ func NewTypeModel(attrCount int) (ret *TypeModel) {
 	return
 }
 
-func (o *TypeModel) SetAttr(attrIndex int, attr *Attr) {
+func (o *TypeModel) AddAttr(attrIndex int, attr *Attr) {
 	o.attrs[attrIndex] = attr
 	o.names[attrIndex] = attr.Id
 	o.indexByName[attr.Id] = attrIndex
@@ -50,32 +50,55 @@ func (o *TypeModel) AttrToIndex(attr string) int {
 	return o.indexByName[attr]
 }
 
-type Item struct {
-	Model    *TypeModel
-	Attrs    []interface{}
-	StartPos int64
-	EndPos   int64
+type TypeItem struct {
+	model       *TypeModel
+	attrsDecode []Decode
+	attrs       []interface{}
+	startPos    int64
+	endPos      int64
 }
 
-func (o *Item) IndexToAttr(index int) string {
-	return o.Model.IndexToAttrName(index)
+func NewTypeItem(model *TypeModel) *TypeItem {
+	return &TypeItem{model: model, attrs: make([]interface{}, len(model.attrs))}
 }
 
-func (o *Item) AttrToIndex(attr string) int {
-	return o.Model.AttrToIndex(attr)
+func (o *TypeItem) IndexToAttr(index int) string {
+	return o.model.IndexToAttrName(index)
 }
 
-func (o *Item) ExprValue(expr string) (ret interface{}, err error) {
+func (o *TypeItem) AttrToIndex(attr string) int {
+	return o.model.AttrToIndex(attr)
+}
+
+func (o *TypeItem) SetAttrValue(attrIndex int, attrValue interface{}) {
+	o.attrs[attrIndex] = attrValue
+}
+
+func (o *TypeItem) GetAttrValue(attrIndex int) (ret interface{}) {
+	ret = o.attrs[attrIndex]
+	if ret == nil && o.attrsDecode != nil {
+		if decode := o.attrsDecode[attrIndex]; decode != nil {
+			if value, err := decode(); err != nil {
+				o.attrs[attrIndex] = err
+			} else {
+				o.attrs[attrIndex] = value
+			}
+		}
+	}
+	return
+}
+
+func (o *TypeItem) ExprValue(expr string) (ret interface{}, err error) {
 	ret, err = o.Expr(expr)
 	return
 }
 
-func (o *Item) Expr(expr string) (ret interface{}, err error) {
+func (o *TypeItem) Expr(expr string) (ret interface{}, err error) {
 	ret = o
 	for _, part := range strings.Split(expr, ".") {
-		if value, ok := ret.(*Item); ok {
+		if value, ok := ret.(*TypeItem); ok {
 			index := value.AttrToIndex(part)
-			if ret = value.Attrs[index]; ret == nil {
+			if ret = value.attrs[index]; ret == nil {
 				err = fmt.Errorf("can't resolve '%v' of expression '%v'", part, expr)
 				break
 			}
@@ -87,12 +110,12 @@ func (o *Item) Expr(expr string) (ret interface{}, err error) {
 	return
 }
 
-func (o *Item) SetStartPos(reader *ReaderIO) {
-	o.StartPos = reader.Position()
+func (o *TypeItem) SetStartPos(reader *ReaderIO) {
+	o.startPos = reader.Position()
 }
 
-func (o *Item) SetEndPos(reader *ReaderIO) {
-	o.EndPos = reader.Position()
+func (o *TypeItem) SetEndPos(reader *ReaderIO) {
+	o.endPos = reader.Position()
 }
 
 type ReaderIO struct {

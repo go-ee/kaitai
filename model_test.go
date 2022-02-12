@@ -1,7 +1,9 @@
 package kaitai
 
 import (
+	"bytes"
 	"github.com/sirupsen/logrus"
+	"io/ioutil"
 	"os"
 	"testing"
 )
@@ -16,13 +18,20 @@ func BenchmarkParsing(t *testing.B) {
 
 func toJson() {
 	logrus.Infof("start")
-	_ = item()
-	//file, _ := json.Marshal(it)
-	//_ = ioutil.WriteFile("file.json", file, 0644)
+	it := item()
+	buffer := bytes.NewBufferString("")
+	err := it.FillJson(buffer)
+	data := buffer.Bytes()
+	//data, err := json.MarshalIndent(it, "", " ")
+	if err == nil {
+		_ = ioutil.WriteFile("data.json", data, 0644)
+	} else {
+		panic(err)
+	}
 	logrus.Infof("end")
 }
 
-func item() (ret *Item) {
+func item() (ret *TypeItem) {
 	ksySpecPath := os.Getenv("KSY_SPEC")
 	ksyDataPath := os.Getenv("KSY_DATA")
 
@@ -38,6 +47,6 @@ func item() (ret *Item) {
 	if err != nil {
 		panic(err)
 	}
-	logrus.Infof("version %v", ret.Attrs[0])
+	logrus.Infof("version %v", ret.GetAttrValue(0))
 	return
 }
