@@ -19,6 +19,7 @@ func toJson() {
 	logrus.Infof("start")
 	it := item()
 	data, err := it.ToJson()
+	//data, err := it.ToJsonIndent("", " ")
 	//data, err := json.MarshalIndent(it, "", " ")
 	if err == nil {
 		_ = ioutil.WriteFile("data.json", data, 0644)

@@ -5,6 +5,16 @@ import (
 	"encoding/json"
 )
 
+func (o *TypeItem) ToJsonIndent(prefix, indent string) (ret []byte, err error) {
+	if ret, err = o.ToJson(); err == nil {
+		var buf bytes.Buffer
+		if err = json.Indent(&buf, ret, prefix, indent); err == nil {
+			ret = buf.Bytes()
+		}
+	}
+	return
+}
+
 func (o *TypeItem) ToJson() (ret []byte, err error) {
 	buffer := bytes.NewBufferString("")
 	err = o.FillJson(buffer)
@@ -15,9 +25,7 @@ func (o *TypeItem) ToJson() (ret []byte, err error) {
 func (o *TypeItem) FillJson(buffer *bytes.Buffer) (err error) {
 	buffer.WriteString("{")
 	for i, value := range o.attrs {
-		buffer.WriteString("\"")
-		buffer.WriteString(o.model.IndexToAttrName(i))
-		buffer.WriteString("\":")
+		o.toJsonAttrName(buffer, i)
 		if childItem, ok := value.(*TypeItem); ok {
 			if err = childItem.FillJson(buffer); err != nil {
 				break
@@ -27,15 +35,12 @@ func (o *TypeItem) FillJson(buffer *bytes.Buffer) (err error) {
 			case []interface{}:
 				buffer.WriteString("[")
 				for _, arrayItem := range t {
-					if arrayItem, arrayOk := arrayItem.(*TypeItem); arrayOk {
-						if err = arrayItem.FillJson(buffer); err != nil {
+					if arrayTypeItem, arrayOk := arrayItem.(*TypeItem); arrayOk {
+						if err = arrayTypeItem.FillJson(buffer); err != nil {
 							break
 						}
 					} else {
-						if jsonValue, attErr := json.Marshal(value); attErr == nil {
-							buffer.Write(jsonValue)
-						} else {
-							err = attErr
+						if err = o.toJsonNative(buffer, value); err != nil {
 							break
 						}
 					}
@@ -54,10 +59,7 @@ func (o *TypeItem) FillJson(buffer *bytes.Buffer) (err error) {
 				buffer.Truncate(buffer.Len() - 1)
 				buffer.WriteString("]")
 			default:
-				if jsonValue, attErr := json.Marshal(value); attErr == nil {
-					buffer.Write(jsonValue)
-				} else {
-					err = attErr
+				if err = o.toJsonNative(buffer, value); err != nil {
 					break
 				}
 			}
@@ -68,6 +70,20 @@ func (o *TypeItem) FillJson(buffer *bytes.Buffer) (err error) {
 	if err == nil {
 		buffer.Truncate(buffer.Len() - 1)
 		buffer.WriteString("}")
+	}
+	return
+}
+
+func (o *TypeItem) toJsonAttrName(buffer *bytes.Buffer, i int) {
+	buffer.WriteString("\"")
+	buffer.WriteString(o.model.IndexToAttrName(i))
+	buffer.WriteString("\":")
+}
+
+func (o *TypeItem) toJsonNative(buffer *bytes.Buffer, value interface{}) (err error) {
+	var jsonValue []byte
+	if jsonValue, err = json.Marshal(value); err == nil {
+		buffer.Write(jsonValue)
 	}
 	return
 }
