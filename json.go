@@ -5,6 +5,13 @@ import (
 	"encoding/json"
 )
 
+func (o *TypeItem) ToJson() (ret []byte, err error) {
+	buffer := bytes.NewBufferString("")
+	err = o.FillJson(buffer)
+	ret = buffer.Bytes()
+	return
+}
+
 func (o *TypeItem) FillJson(buffer *bytes.Buffer) (err error) {
 	buffer.WriteString("{")
 	for i, value := range o.attrs {

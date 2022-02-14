@@ -1,7 +1,6 @@
 package kaitai
 
 import (
-	"bytes"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
@@ -19,9 +18,7 @@ func BenchmarkParsing(t *testing.B) {
 func toJson() {
 	logrus.Infof("start")
 	it := item()
-	buffer := bytes.NewBufferString("")
-	err := it.FillJson(buffer)
-	data := buffer.Bytes()
+	data, err := it.ToJson()
 	//data, err := json.MarshalIndent(it, "", " ")
 	if err == nil {
 		_ = ioutil.WriteFile("data.json", data, 0644)
