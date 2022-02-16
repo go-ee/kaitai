@@ -22,7 +22,7 @@ func toJson() {
 	//data, err := it.ToJsonIndent("", " ")
 	//data, err := json.MarshalIndent(it, "", " ")
 	if err == nil {
-		_ = ioutil.WriteFile("data.json", data, 0644)
+		_ = ioutil.WriteFile(it.model.typeSpec.Id+".json", data, 0644)
 	} else {
 		panic(err)
 	}

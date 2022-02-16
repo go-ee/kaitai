@@ -21,9 +21,8 @@ func (o *Type) BuildReader(_ *Attr, spec *Spec) (ret Reader, err error) {
 }
 
 func (o *Type) buildSeqReaders(spec *Spec) (ret []Reader, model *TypeModel, err error) {
-	attrCount := len(o.Seq)
-	model = NewTypeModel(attrCount)
-	readers := make([]Reader, attrCount)
+	model = NewTypeModel(o)
+	readers := make([]Reader, len(o.Seq))
 	for i, attr := range o.Seq {
 		model.AddAttr(i, attr)
 		if readers[i], err = attr.BuildReader(spec); err != nil {

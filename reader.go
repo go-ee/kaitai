@@ -18,13 +18,16 @@ type Parse func(data []byte) (interface{}, error)
 type Decode func() (interface{}, error)
 
 type TypeModel struct {
+	typeSpec    *Type
 	attrs       []*Attr
 	names       []string
 	indexByName map[string]int
 }
 
-func NewTypeModel(attrCount int) (ret *TypeModel) {
+func NewTypeModel(typeSpec *Type) (ret *TypeModel) {
+	attrCount := len(typeSpec.Seq)
 	ret = &TypeModel{
+		typeSpec:    typeSpec,
 		attrs:       make([]*Attr, attrCount),
 		names:       make([]string, attrCount),
 		indexByName: make(map[string]int, attrCount),
